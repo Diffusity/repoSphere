@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/airbornharsh/hit/utils"
+	"github.com/Diffusity/repoSphere/utils"
 )
 
-// WriteObject compresses and stores object in .rs/objects
+// compresses and stores object in .rs/objects
 func WriteObject(hash string, content []byte) error {
 	dir := filepath.Join(".rs", "objects", hash[:2])
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -46,14 +46,14 @@ func LoadObject(hash string) (string, error) {
 	}
 	defer file.Close()
 
-	// Create zlib reader directly from the file
+	//create zlib reader directly from the file
 	reader, err := zlib.NewReader(file)
 	if err != nil {
 		return "", err
 	}
 	defer reader.Close()
 
-	// Read and decompress the content
+	//read and decompress the content
 	decompressed, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err

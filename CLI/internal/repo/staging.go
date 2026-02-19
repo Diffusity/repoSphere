@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/airbornharsh/hit/internal/storage"
+	"github.com/Diffusity/repoSphere/internal/storage"
 )
 
 type Index struct {
@@ -15,28 +15,28 @@ type Index struct {
 	Changed bool              `json:"changed"`
 }
 
-// AddFile reads, hashes, compresses, and stores the file in .rs/objects
+// reads, hashes, compresses, and stores the file in .rs/objects
 func AddFile(filePath string) (string, error) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		removeFromIndex(filePath)
 		return "", fmt.Errorf("file does not exist: %s", filePath)
 	}
 
-	// Read file
+	//Read file
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}
 
-	// Hash content
+	//Hash content
 	hash := storage.Hash(content)
 
-	// Store object
+	//Store object
 	if err := storage.WriteObject(hash, content); err != nil {
 		return "", err
 	}
 
-	// Update staging index
+	//Update staging index
 	indexFile := filepath.Join(".rs", "index.json")
 	index := &Index{Entries: make(map[string]string)}
 

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/airbornharsh/hit/internal/commit"
+	"github.com/Diffusity/repoSphere/internal/commit"
 
 	"github.com/spf13/cobra"
 )

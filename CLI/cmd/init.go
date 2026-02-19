@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/airbornharsh/hit/internal/repo"
+	"github.com/Diffusity/repoSphere/internal/repo"
 
 	"github.com/spf13/cobra"
 )

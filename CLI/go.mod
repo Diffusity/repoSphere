@@ -1,4 +1,4 @@
-module github.com/airbornharsh/hit
+module github.com/Diffusity/repoSphere
 
 go 1.23.0
 

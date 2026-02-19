@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/airbornharsh/hit/internal/storage"
-	"github.com/airbornharsh/hit/utils"
+	"github.com/Diffusity/repoSphere/internal/storage"
+	"github.com/Diffusity/repoSphere/utils"
 )
 
 type Tree struct {

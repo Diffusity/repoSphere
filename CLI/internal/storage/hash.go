@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Hash returns SHA1 hash of content
+// returns SHA1 hash of content
 func Hash(content []byte) string {
 	h := sha1.New()
 	h.Write(content)

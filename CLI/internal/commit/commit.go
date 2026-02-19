@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/airbornharsh/hit/internal/repo"
-	"github.com/airbornharsh/hit/internal/storage"
-	"github.com/airbornharsh/hit/utils"
+	"github.com/Diffusity/repoSphere/internal/repo"
+	"github.com/Diffusity/repoSphere/internal/storage"
+	"github.com/Diffusity/repoSphere/utils"
 )
 
 type Commit struct {
@@ -91,7 +91,7 @@ func LogCommits() {
 
 	fmt.Printf("Found %d commit(s)\n\n", len(commits))
 
-	// Display commits in chronological order (oldest first)
+	//display commits in chronological order (oldest first)
 	for i := 0; i < len(commits); i++ {
 		commit := commits[i]
 
@@ -127,7 +127,7 @@ func ShowCommit(hash string) {
 		return
 	}
 
-	// Create sets of file names for comparison
+	//create sets of file names for comparison
 	currentFiles := make(map[string]bool)
 	parentFiles := make(map[string]bool)
 
@@ -139,7 +139,7 @@ func ShowCommit(hash string) {
 		parentFiles[fileName] = true
 	}
 
-	// Find added files (in current but not in parent)
+	//find added files (in current but not in parent)
 	fmt.Println("Added files:")
 	added := false
 	for fileName := range currentFiles {
@@ -152,7 +152,7 @@ func ShowCommit(hash string) {
 		fmt.Println("  (none)")
 	}
 
-	// Find deleted files (in parent but not in current)
+	//find deleted files (in parent but not in current)
 	fmt.Println("\nDeleted files:")
 	deleted := false
 	for fileName := range parentFiles {
@@ -165,7 +165,7 @@ func ShowCommit(hash string) {
 		fmt.Println("  (none)")
 	}
 
-	// Find modified files (in both but with different hashes)
+	//find modified files (in both but with different hashes)
 	fmt.Println("\nModified files:")
 	modified := false
 	for fileName, fileHash := range tree.Entries {

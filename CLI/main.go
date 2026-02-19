@@ -1,6 +1,6 @@
 package main
 
-import "github.com/airbornharsh/hit/cmd"
+import "github.com/Diffusity/repoSphere/cmd"
 
 func main() {
 	cmd.Execute()

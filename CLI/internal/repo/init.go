@@ -7,12 +7,12 @@ import (
 )
 
 func InitRepo() error {
-	// Check if .rs already exists
+	//check if .rs already exists
 	if _, err := os.Stat(".rs"); !os.IsNotExist(err) {
 		return fmt.Errorf("repository already exists")
 	}
 
-	// Create required folders
+	//create required folders
 	dirs := []string{
 		".rs",
 		".rs/objects",
@@ -26,7 +26,7 @@ func InitRepo() error {
 		}
 	}
 
-	// Create HEAD file
+	//create HEAD file
 	headFilePath := filepath.Join(".rs", "HEAD")
 	headRefFilePath := filepath.Join(".rs", "refs", "heads", "master")
 	headLogRefFilePath := filepath.Join(".rs", "logs", "refs", "heads", "master")
