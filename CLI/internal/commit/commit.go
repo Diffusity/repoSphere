@@ -91,7 +91,7 @@ func LogCommits() {
 
 	fmt.Printf("Found %d commit(s)\n\n", len(commits))
 
-	//display commits in chronological order (oldest first)
+	// Display commits in chronological order (oldest first)
 	for i := 0; i < len(commits); i++ {
 		commit := commits[i]
 
@@ -115,6 +115,19 @@ func ShowCommit(hash string) {
 		return
 	}
 
+	// Check if this is the initial commit (no parent)
+	if tree.Parent == "" || tree.Parent == "0000000000000000000000000000000000000000" {
+		fmt.Println("Initial commit - all files:")
+		if len(tree.Entries) == 0 {
+			fmt.Println("  (no files)")
+		} else {
+			for fileName := range tree.Entries {
+				fmt.Printf("  + %s\n", fileName)
+			}
+		}
+		return
+	}
+
 	parentCommitData, err := storage.LoadObject(tree.Parent)
 	if err != nil {
 		fmt.Println("Error loading parent commit:", err)
@@ -123,11 +136,11 @@ func ShowCommit(hash string) {
 
 	var parentTree repo.Tree
 	if err := json.Unmarshal([]byte(parentCommitData), &parentTree); err != nil {
-		fmt.Println("Error parsing tree:", err)
+		fmt.Println("Error parsing parent tree:", err)
 		return
 	}
 
-	//create sets of file names for comparison
+	// Create sets of file names for comparison
 	currentFiles := make(map[string]bool)
 	parentFiles := make(map[string]bool)
 
@@ -139,7 +152,7 @@ func ShowCommit(hash string) {
 		parentFiles[fileName] = true
 	}
 
-	//find added files (in current but not in parent)
+	// Find added files (in current but not in parent)
 	fmt.Println("Added files:")
 	added := false
 	for fileName := range currentFiles {
@@ -152,7 +165,7 @@ func ShowCommit(hash string) {
 		fmt.Println("  (none)")
 	}
 
-	//find deleted files (in parent but not in current)
+	// Find deleted files (in parent but not in current)
 	fmt.Println("\nDeleted files:")
 	deleted := false
 	for fileName := range parentFiles {
@@ -165,7 +178,7 @@ func ShowCommit(hash string) {
 		fmt.Println("  (none)")
 	}
 
-	//find modified files (in both but with different hashes)
+	// Find modified files (in both but with different hashes)
 	fmt.Println("\nModified files:")
 	modified := false
 	for fileName, fileHash := range tree.Entries {
@@ -179,5 +192,84 @@ func ShowCommit(hash string) {
 	}
 	if !modified {
 		fmt.Println("  (none)")
+	}
+}
+
+func ShowCommitExpanded(hash string) {
+	commitData, err := storage.LoadObject(hash)
+	if err != nil {
+		fmt.Println("Error loading commit:", err)
+		return
+	}
+
+	var tree repo.Tree
+	if err := json.Unmarshal([]byte(commitData), &tree); err != nil {
+		fmt.Println("Error parsing tree:", err)
+		return
+	}
+
+	if tree.Parent == "" || tree.Parent == "0000000000000000000000000000000000000000" {
+		if len(tree.Entries) == 0 {
+			fmt.Println("(no files)")
+			return
+		}
+		for fileName, fileHash := range tree.Entries {
+			fmt.Printf("diff -- %s (added)\n", fileName)
+			diff := storage.GetDifference("", fileHash)
+			if diff == "" {
+				fmt.Println("(no content)")
+			} else {
+				fmt.Println(diff)
+			}
+		}
+		return
+	}
+
+	parentCommitData, err := storage.LoadObject(tree.Parent)
+	if err != nil {
+		fmt.Println("Error loading parent commit:", err)
+		return
+	}
+
+	var parentTree repo.Tree
+	if err := json.Unmarshal([]byte(parentCommitData), &parentTree); err != nil {
+		fmt.Println("Error parsing parent tree:", err)
+		return
+	}
+
+	printed := false
+	for fileName, fileHash := range tree.Entries {
+		parentHash, ok := parentTree.Entries[fileName]
+		if !ok {
+			// Added file
+			fmt.Printf("diff -- %s (added)\n", fileName)
+			diff := storage.GetDifference("", fileHash)
+			if diff != "" {
+				fmt.Println(diff)
+			}
+			printed = true
+		} else if parentHash != fileHash {
+			// Modified file
+			diff := storage.GetDifference(parentHash, fileHash)
+			if diff != "" {
+				fmt.Printf("diff -- %s (modified)\n", fileName)
+				fmt.Println(diff)
+				printed = true
+			}
+		}
+	}
+	for fileName, parentHash := range parentTree.Entries {
+		if _, ok := tree.Entries[fileName]; !ok {
+			// Deleted file
+			fmt.Printf("diff -- %s (deleted)\n", fileName)
+			diff := storage.GetDifference(parentHash, "")
+			if diff != "" {
+				fmt.Println(diff)
+			}
+			printed = true
+		}
+	}
+	if !printed {
+		fmt.Println("(no changes)")
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/Diffusity/repoSphere/utils"
 )
 
-// compresses and stores object in .rs/objects
+// WriteObject compresses and stores object in .rs/objects
 func WriteObject(hash string, content []byte) error {
 	dir := filepath.Join(".rs", "objects", hash[:2])
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -46,14 +46,15 @@ func LoadObject(hash string) (string, error) {
 	}
 	defer file.Close()
 
-	//create zlib reader directly from the file
+	// Create zlib reader directly from the file
 	reader, err := zlib.NewReader(file)
+	println(err)
 	if err != nil {
 		return "", err
 	}
 	defer reader.Close()
 
-	//read and decompress the content
+	// Read and decompress the content
 	decompressed, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
