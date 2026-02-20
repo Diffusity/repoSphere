@@ -34,11 +34,16 @@ func CreateCommit(message string) (string, error) {
 	parentFile, _ := os.ReadFile(parentFilePath)
 	parentLogFile, _ := os.ReadFile(parentLogFilePath)
 
+	author := os.Getenv("USER")
+	if author == "" {
+		author = os.Getenv("USERNAME")
+	}
+
 	commit := Commit{
 		Tree:      stagedTreeHash,
 		Parent:    string(parentFile),
 		Message:   message,
-		Author:    os.Getenv("USER"),
+		Author:    author,
 		Timestamp: time.Now(),
 	}
 
