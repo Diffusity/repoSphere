@@ -6,7 +6,7 @@ import (
 )
 
 var logsCmd = &cobra.Command{
-	Use:   "logs",
+	Use:   "log",
 	Short: "Show Commits",
 	Run: func(cmd *cobra.Command, args []string) {
 		commit.LogCommits()
