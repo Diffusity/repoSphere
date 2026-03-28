@@ -5,11 +5,11 @@ import { CommitDetailPage } from '@/pages/CommitDetailPage'
 import { CommitListPage } from '@/pages/CommitListPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ExplorePage } from '@/pages/ExplorePage'
+import { GitHubRepositoryPage } from '@/pages/GitHubRepositoryPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RepositoryListPage } from '@/pages/RepositoryListPage'
-import { RepositoryPage } from '@/pages/RepositoryPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
@@ -29,7 +29,9 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/:username/:repoName/commits" element={<CommitListPage />} />
           <Route path="/:username/:repoName/commit/:hash" element={<CommitDetailPage />} />
-          <Route path="/:username/:repoName" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/blob/:branch/*" element={<GitHubRepositoryPage />} />
+          <Route path="/:username/:repoName/tree/:branch/*" element={<GitHubRepositoryPage />} />
+          <Route path="/:username/:repoName" element={<GitHubRepositoryPage />} />
           <Route path="/:username" element={<ProfilePage />} />
         </Route>
       </Route>
