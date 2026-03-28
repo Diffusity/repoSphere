@@ -1,0 +1,59 @@
+@import 'tailwindcss';
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+
+  --color-rs-bg: #0d1117;
+  --color-rs-surface: #161b22;
+  --color-rs-elevated: #21262d;
+  --color-rs-border: #30363d;
+  --color-rs-accent: #238636;
+  --color-rs-danger: #da3633;
+  --color-rs-muted: #8b949e;
+  --color-rs-link: #58a6ff;
+
+  --color-background: var(--color-rs-bg);
+  --color-foreground: #f0f6fc;
+  --color-card: var(--color-rs-surface);
+  --color-card-foreground: #f0f6fc;
+  --color-popover: var(--color-rs-surface);
+  --color-popover-foreground: #f0f6fc;
+  --color-primary: #f0f6fc;
+  --color-primary-foreground: #0d1117;
+  --color-secondary: var(--color-rs-elevated);
+  --color-secondary-foreground: #f0f6fc;
+  --color-muted: var(--color-rs-elevated);
+  --color-muted-foreground: var(--color-rs-muted);
+  --color-accent: var(--color-rs-elevated);
+  --color-accent-foreground: #f0f6fc;
+  --color-destructive: var(--color-rs-danger);
+  --color-border: var(--color-rs-border);
+  --color-input: var(--color-rs-border);
+  --color-ring: var(--color-rs-link);
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    @apply min-h-screen bg-background font-sans text-foreground;
+  }
+
+  #root {
+    @apply w-full max-w-none text-left;
+  }
+}
