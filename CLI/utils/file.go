@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Diffusity/repoSphere/internal/types"
 )
 
 func FindRepoRoot() (string, error) {
@@ -47,4 +50,47 @@ func GetHeadHash() (string, error) {
 
 	file, _ := os.ReadFile(filepath.Join(".rs", location))
 	return string(file), nil
+}
+
+func GetBranch() (string, error) {
+	location, err := GetHead()
+	if err != nil {
+		return "", err
+	}
+
+	segments := strings.Split(location, "/")
+	return segments[len(segments)-1], nil
+}
+
+func GetCurrentCommit(branch string) (string, error) {
+	filePath := filepath.Join(".rs", "refs", "heads", branch)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return "", fmt.Errorf("branch %s does not exist", branch)
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func GetConfig() (*types.RemoteConfig, error) {
+	filePath := filepath.Join(".rs", "config")
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("config file does not exist")
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config types.RemoteConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
