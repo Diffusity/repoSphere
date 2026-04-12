@@ -1,7 +1,6 @@
 package apis
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,8 +10,8 @@ import (
 	"github.com/Diffusity/repoSphere/utils"
 )
 
-func GetHeadCommitHash(remote string, branchName string) (bool, string, error) {
-	url := fmt.Sprintf(utils.BACKEND_URL+"/api/v1/branch/%s/head-commit?remote=%s", branchName, remote)
+func GetHeadCommitHash(owner, name, branchName string) (bool, string, error) {
+	url := fmt.Sprintf("%s/api/v1/repo/%s/%s/branch/%s/head", utils.BACKEND_URL, owner, name, branchName)
 
 	token := utils.GetSession().Token
 
@@ -28,6 +27,9 @@ func GetHeadCommitHash(remote string, branchName string) (bool, string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return false, "", fmt.Errorf("repository or branch not found on remote")
+		}
 		return false, "", fmt.Errorf("failed to get head commit: %s", resp.Status)
 	}
 
@@ -46,37 +48,9 @@ func GetHeadCommitHash(remote string, branchName string) (bool, string, error) {
 		return false, "", fmt.Errorf("failed to get head commit: %s", headCommitApiBody.Message)
 	}
 
-	return headCommitApiBody.Data.Exists, headCommitApiBody.Data.HeadCommit.Hash, nil
-}
-
-func CreateCommit(remote string, branchName string, commits []types.Commit) error {
-	url := fmt.Sprintf(utils.BACKEND_URL+"/api/v1/branch/%s/commits?remote=%s", branchName, remote)
-
-	token := utils.GetSession().Token
-
-	jsonBody, err := json.Marshal(map[string]any{
-		"commits": commits,
-	})
-	if err != nil {
-		return err
+	if !headCommitApiBody.Data.Exists || headCommitApiBody.Data.HeadCommit == nil {
+		return false, "", nil
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Terminal %s", token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("failed to create commit: %s", resp.Status)
-	}
-
-	return nil
+	return true, headCommitApiBody.Data.HeadCommit.Hash, nil
 }

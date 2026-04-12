@@ -9,6 +9,18 @@ import (
 )
 
 func Login() {
+	existingSession := utils.GetSession()
+	if existingSession != nil && existingSession.Email != "" && existingSession.Token != "" {
+		fmt.Printf("⚠️  You are already logged in as %s.\n", existingSession.Email)
+		fmt.Print("Do you want to log in again? (y/N): ")
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" && response != "Y" {
+			fmt.Println("Aborted.")
+			return
+		}
+	}
+
 	session, err := apis.CreateSessionApi()
 	if err != nil {
 		fmt.Println("Error in Generating Session:", err)
@@ -23,8 +35,10 @@ func Login() {
 	endTime := time.Now().Add(timeout)
 	sessionId := session.SessionId
 
+	fmt.Println("Waiting for authentication...")
 	for time.Now().Before(endTime) {
 		time.Sleep(3 * time.Second)
+		fmt.Print(".") // Status indicator
 
 		data, err := apis.CheckSessionApi(sessionId)
 		if err != nil {
@@ -62,6 +76,14 @@ func User() {
 }
 
 func Logout() {
+	session := utils.GetSession()
+	if session != nil && session.Token != "" {
+		err := apis.LogoutApi(session.Token)
+		if err != nil {
+			fmt.Printf("⚠️  Warning: Could not invalidate session on server: %v\n", err)
+		}
+	}
+
 	utils.DeleteSession()
-	fmt.Println("Logged out successfully")
+	fmt.Println("\n✅ Logged out successfully")
 }

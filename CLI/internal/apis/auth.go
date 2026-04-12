@@ -92,3 +92,26 @@ func CheckSessionApi(sessionId string) (*CheckSessionApiBodyData, error) {
 
 	return &checkRes.Data, nil
 }
+
+func LogoutApi(token string) error {
+	url := utils.BACKEND_URL + "/api/v1/auth/logout"
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Authorization", "Terminal "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}

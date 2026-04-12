@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
@@ -39,3 +39,12 @@ async def check_terminal_session(
     db: AsyncSession = Depends(get_db),
 ):
     return await auth_controller.check_terminal_session(session_id, db)
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(auth_middleware),
+):
+    return await auth_controller.logout(request, db)

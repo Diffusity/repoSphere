@@ -43,3 +43,15 @@ export async function pollTerminalSession(client: AxiosInstance, sessionId: stri
   const { data } = await client.get<SessionPollResponse>(`/api/v1/auth/session/${sessionId}`)
   return data
 }
+
+export async function completeTerminalSession(client: AxiosInstance, token: string) {
+  const { data } = await client.post<{ success: boolean; message: string }>(
+    `/api/v1/auth/session/${token}`
+  )
+  return data
+}
+
+export async function logout(client: AxiosInstance) {
+  const { data } = await client.post<{ success: boolean; message: string }>('/api/v1/auth/logout')
+  return data
+}

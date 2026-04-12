@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -127,3 +127,32 @@ async def check_terminal_session(
             "token": jwt_token,
         },
     }
+
+
+async def logout(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """POST /api/v1/auth/logout — Invalidate terminal session."""
+    auth_header = request.headers.get("authorization", "")
+    parts = auth_header.split(" ", 1)
+
+    if len(parts) == 2 and parts[0] == "Terminal":
+        token = parts[1]
+        decoded = jwt_service.decode_token(token)
+        if decoded and decoded.get("sessionId"):
+            session_id = decoded["sessionId"]
+            try:
+                sid = uuid.UUID(session_id)
+                result = await db.execute(
+                    select(TerminalSession).where(TerminalSession.id == sid)
+                )
+                session = result.scalar_one_or_none()
+                if session:
+                    session.status = "deleted"
+                    await db.commit()
+                    return {"success": True, "message": "Logged out successfully"}
+            except ValueError:
+                pass
+
+    return {"success": True, "message": "Logged out successfully (session already cleared or not a terminal session)"}

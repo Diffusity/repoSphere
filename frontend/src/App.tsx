@@ -13,6 +13,7 @@ import { RepositoryListPage } from '@/pages/RepositoryListPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
+import { TerminalAuthPage } from '@/pages/TerminalAuthPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
+      <Route path="/terminal" element={<TerminalAuthPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
