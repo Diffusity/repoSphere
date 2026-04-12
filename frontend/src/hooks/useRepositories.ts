@@ -1,20 +1,25 @@
-import { useMemo } from 'react'
-import type { Repository } from '@/types'
-import { mockRepositories } from '@/lib/mockData'
+import { useQuery } from '@tanstack/react-query'
+import { useApiClient } from '@/api/client'
+import { fetchUserRepositories, fetchExploreRepositories } from '@/api/repo'
 
-function useMockMode() {
-  return import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.VITE_USE_MOCK !== 'false'
-}
+export function useRepositories(username?: string) {
+  const client = useApiClient()
 
-export function useRepositories(username?: string): { repositories: Repository[]; isMock: boolean } {
-  const mock = useMockMode()
-  return useMemo(() => {
-    if (!mock) {
-      return { repositories: [], isMock: false }
-    }
-    const list = username
-      ? mockRepositories.filter((r) => r.owner === username)
-      : [...mockRepositories]
-    return { repositories: list, isMock: true }
-  }, [mock, username])
+  const { data: realRepos, isLoading, isError } = useQuery({
+    queryKey: ['repositories', username],
+    queryFn: () => {
+      if (username) {
+        return fetchUserRepositories(client, username)
+      } else {
+        return fetchExploreRepositories(client)
+      }
+    },
+  })
+
+  return { 
+    repositories: realRepos?.success ? realRepos.data : [], 
+    isMock: false,
+    isLoading,
+    isError
+  }
 }

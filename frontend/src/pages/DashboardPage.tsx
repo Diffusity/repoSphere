@@ -11,29 +11,20 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useRepositories } from '@/hooks/useRepositories'
 import { formatRelativeTime, truncateHash } from '@/lib/utils'
 
-const activity = [
-  {
-    user: 'john_doe',
-    message: 'feat: add authentication',
-    hash: '9a1f5c152f7d58b7',
-    time: '2026-03-25T07:06:00Z',
-    repo: 'john_doe/my-project',
-  },
-  {
-    user: 'jane_dev',
-    message: 'fix: diff output for empty trees',
-    hash: 'b2c3d4e5f6a70891',
-    time: '2026-03-24T14:22:00Z',
-    repo: 'john_doe/reposphere-cli',
-  },
-]
+import { useUserActivity, useUserStats } from '@/hooks/useRepository'
 
 export function DashboardPage() {
   const { user, isLoaded: clerkLoaded } = useUser()
   const { data: me, isLoading: userLoading } = useCurrentUser()
-  const { repositories } = useRepositories()
+  
+  const username = (user?.publicMetadata?.username as string) || (me?.user.username as string)
+  const { repositories, isLoading: reposLoading } = useRepositories(username)
+  const { data: activityData, isLoading: activityLoading } = useUserActivity(username)
+  const { data: statsData, isLoading: statsLoading } = useUserStats(username)
 
   const displayName = user?.fullName ?? me?.user.name ?? 'there'
+  const activityList = activityData?.success ? activityData.data : []
+  const stats = statsData?.success ? statsData.data : { repoCount: 0, commitsToday: 0, contributors: 0 }
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -56,19 +47,19 @@ export function DashboardPage() {
         <Card className="border-rs-border bg-rs-surface">
           <CardHeader className="pb-2">
             <CardDescription>Repositories</CardDescription>
-            <CardTitle className="text-2xl">{repositories.length}</CardTitle>
+            <CardTitle className="text-2xl">{reposLoading ? <Skeleton className="h-8 w-12" /> : stats.repoCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="border-rs-border bg-rs-surface">
           <CardHeader className="pb-2">
             <CardDescription>Commits today</CardDescription>
-            <CardTitle className="text-2xl">3</CardTitle>
+            <CardTitle className="text-2xl">{statsLoading ? <Skeleton className="h-8 w-12" /> : stats.commitsToday}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="border-rs-border bg-rs-surface">
           <CardHeader className="pb-2">
-            <CardDescription>Contributors (mock)</CardDescription>
-            <CardTitle className="text-2xl">5</CardTitle>
+            <CardDescription>Contributors</CardDescription>
+            <CardTitle className="text-2xl">{statsLoading ? <Skeleton className="h-8 w-12" /> : stats.contributors}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -79,58 +70,70 @@ export function DashboardPage() {
             <CardTitle className="text-base">Recent repositories</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {repositories.slice(0, 4).map((r) => (
-              <Link
-                key={r.id}
-                to={`/${r.owner}/${r.name}`}
-                className="flex flex-col gap-1 rounded-md border border-transparent px-2 py-2 hover:border-rs-border hover:bg-rs-elevated/60"
-              >
-                <span className="font-medium text-rs-link">
-                  {r.owner}/{r.name}
-                </span>
-                <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-                  <span className="text-rs-link">{truncateHash(r.latestCommit.hash)}</span>
-                  <span>{formatRelativeTime(r.latestCommit.timestamp)}</span>
-                </span>
-              </Link>
-            ))}
+            {reposLoading ? (
+              [1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)
+            ) : repositories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No repositories yet.</p>
+            ) : (
+              repositories.slice(0, 5).map((r) => (
+                <Link
+                  key={r.id}
+                  to={`/${username}/${r.name}`}
+                  className="flex flex-col gap-1 rounded-md border border-transparent px-2 py-2 hover:border-rs-border hover:bg-rs-elevated/60"
+                >
+                  <span className="font-medium text-rs-link">
+                    {username}/{r.name}
+                  </span>
+                  <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                    <span className="text-rs-link">{r.latestCommit ? truncateHash(r.latestCommit.hash) : 'Initial'}</span>
+                    <span>{r.latestCommit ? formatRelativeTime(r.latestCommit.timestamp) : ''}</span>
+                  </span>
+                </Link>
+              ))
+            )}
           </CardContent>
         </Card>
 
         <Card className="border-rs-border bg-rs-surface lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Activity feed</CardTitle>
-            <CardDescription>Latest commits across your network (mock)</CardDescription>
+            <CardDescription>Latest commits from your repositories</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {activity.map((a, i) => (
-              <div key={i}>
-                <div className="flex gap-3">
-                  <Avatar className="size-9">
-                    <AvatarFallback>{a.user[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm">
-                      <span className="font-medium">{a.user}</span>{' '}
-                      <span className="text-muted-foreground">pushed to</span>{' '}
-                      <Link to={`/${a.repo}`} className="text-rs-link hover:underline">
-                        {a.repo}
-                      </Link>
-                    </p>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">{a.message}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {truncateHash(a.hash)}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatRelativeTime(a.time)}
-                      </span>
+            {activityLoading ? (
+              [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)
+            ) : activityList.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No recent activity.</p>
+            ) : (
+              activityList.map((a, i) => (
+                <div key={i}>
+                  <div className="flex gap-3">
+                    <Avatar className="size-9">
+                      <AvatarFallback>{a.user[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">
+                        <span className="font-medium">{a.user}</span>{' '}
+                        <span className="text-muted-foreground">pushed to</span>{' '}
+                        <Link to={`/${a.repo}`} className="text-rs-link hover:underline">
+                          {a.repo}
+                        </Link>
+                      </p>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">{a.message}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {truncateHash(a.hash)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatRelativeTime(a.time)}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  {i < activityList.length - 1 ? <Separator className="mt-4" /> : null}
                 </div>
-                {i < activity.length - 1 ? <Separator className="mt-4" /> : null}
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 

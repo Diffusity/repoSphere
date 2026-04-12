@@ -1,79 +1,113 @@
-import { Link, useParams } from 'react-router-dom'
+import { ChevronLeft, GitCommit, Loader2 } from 'lucide-react'
+import { useParams, Link } from 'react-router-dom'
+import { CommitHash } from '@/components/common/CommitHash'
 import { DiffViewer } from '@/components/common/DiffViewer'
-import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { getMockCommitsForRepo, getMockRepo, mockDiffForCommit } from '@/lib/mockData'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatRelativeTime, truncateHash } from '@/lib/utils'
+import { useCommitDetail, useCommitDiff, useRepository } from '@/hooks/useRepository'
 
 export function CommitDetailPage() {
   const { username = '', repoName = '', hash = '' } = useParams()
-  const repo = getMockRepo(username, repoName)
-  const commits = getMockCommitsForRepo(username, repoName)
-  const commit = commits.find((c) => c.hash === hash || c.hash.startsWith(hash))
-  const repoKey = `${username}/${repoName}`
-  const files = commit ? mockDiffForCommit(repoKey, commit.hash) : []
 
-  const additions = files.reduce((s, f) => s + f.additions, 0)
-  const deletions = files.reduce((s, f) => s + f.deletions, 0)
+  const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
+  const { data: commitRes, isLoading: commitLoading } = useCommitDetail(username, repoName, hash)
+  const { data: diffRes, isLoading: diffLoading } = useCommitDiff(username, repoName, hash)
 
-  if (!repo || !commit) {
+  const repo = repoRes?.success ? repoRes.data : null
+  const commit = commitRes?.success ? commitRes.data : null
+  const diffs = diffRes?.success ? diffRes.data : []
+
+  if (commitLoading || repoLoading) {
     return (
-      <div className="mx-auto max-w-3xl py-16 text-center">
-        <p className="text-muted-foreground">Commit not found.</p>
-        <Button className="mt-4" variant="outline" asChild>
-          <Link to={`/${username}/${repoName}/commits`}>Back to commits</Link>
-        </Button>
+      <div className="mx-auto max-w-5xl space-y-8 py-8">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-[400px] w-full rounded-lg" />
       </div>
     )
   }
 
+  if (!commit || !repo) {
+    return (
+      <div className="mx-auto max-w-3xl py-16 text-center text-muted-foreground">
+        Commit or repository not found
+      </div>
+    )
+  }
+
+  const nFiles = commit.filesChanged?.length || 0
+  const add = diffs.reduce((s, f) => s + f.additions, 0)
+  const del = diffs.reduce((s, f) => s + f.deletions, 0)
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="text-sm text-muted-foreground">
-        <Link to={`/${username}/${repoName}`} className="text-rs-link hover:underline">
-          {username}/{repoName}
+    <div className="mx-auto max-w-5xl space-y-6 px-4 lg:px-0">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link to={`/${username}/${repoName}/commits`} className="flex items-center gap-1 hover:text-rs-link">
+          <ChevronLeft className="size-4" />
+          Back to commits
         </Link>
-        <span className="mx-2">/</span>
-        <Link to={`/${username}/${repoName}/commits`} className="text-rs-link hover:underline">
-          commits
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="font-mono text-foreground">{truncateHash(commit.hash)}</span>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-semibold leading-snug">{commit.message}</h1>
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{commit.author}</span>
-          <span>{commit.authorEmail}</span>
-          <span>committed {formatRelativeTime(commit.timestamp)}</span>
+      <header className="rounded-lg border border-rs-border bg-rs-surface overflow-hidden shadow-sm">
+        <div className="bg-rs-bg/50 px-6 py-4 border-b border-rs-border">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent">
+                Browse files
+              </Button>
+              <CommitHash hash={commit.hash} />
+            </div>
+          </div>
+          {commit.description && (
+            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+              {commit.description}
+            </p>
+          )}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 font-mono text-xs">
-          <Badge variant="outline" className="font-mono">
-            {commit.hash}
-          </Badge>
-          {commit.parent && commit.parent !== '0000000000000000' ? (
-            <Button variant="outline" size="sm" className="h-7 font-mono" asChild>
-              <Link to={`/${username}/${repoName}/commit/${commit.parent}`}>
-                parent {truncateHash(commit.parent)}
-              </Link>
-            </Button>
-          ) : null}
+
+        <div className="flex flex-wrap items-center gap-4 px-6 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <Avatar className="size-6 shrink-0 rounded-full">
+              <AvatarFallback className="bg-rs-accent text-[10px] text-white">
+                {commit.author[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-semibold text-white">{commit.author}</span>
+            <span className="text-muted-foreground">
+              committed {formatRelativeTime(commit.timestamp)}
+            </span>
+          </div>
+          <Separator orientation="vertical" className="hidden h-4 bg-rs-border sm:block" />
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <GitCommit className="size-3.5" />
+              1 parent <span className="font-mono text-rs-link hover:underline cursor-pointer">{truncateHash(commit.hash)}</span>
+            </span>
+            <span>commit <span className="font-mono text-white">{commit.hash}</span></span>
+          </div>
         </div>
+      </header>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          Showing {nFiles} changed file{nFiles === 1 ? '' : 's'} with{' '}
+          <span className="text-emerald-400 font-semibold">+{add} additions</span> and{' '}
+          <span className="text-red-400 font-semibold">−{del} deletions</span>
+        </h2>
       </div>
 
-      <div className="flex flex-wrap gap-4 rounded-md border border-rs-border bg-rs-surface px-4 py-3 text-sm">
-        <span>
-          <strong className="text-foreground">{files.length}</strong> files changed
-        </span>
-        <span className="text-emerald-400">+{additions}</span>
-        <span className="text-red-400">−{deletions}</span>
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-lg font-semibold">Changed files</h2>
-        <DiffViewer files={files} />
-      </div>
+      {diffLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 border border-rs-border rounded-lg bg-rs-surface">
+          <Loader2 className="size-10 animate-spin text-rs-link mb-4" />
+          <p className="text-muted-foreground">Loading diffs...</p>
+        </div>
+      ) : (
+        <DiffViewer files={diffs} className="pb-12" />
+      )}
     </div>
   )
 }

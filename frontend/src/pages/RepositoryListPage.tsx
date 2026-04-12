@@ -1,5 +1,8 @@
-import { FolderGit2, Plus, Search } from 'lucide-react'
 import * as React from 'react'
+import { FolderGit2, Plus, Search, Loader2 } from 'lucide-react'
+import { useUser } from '@clerk/clerk-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { RepoCard } from '@/components/common/RepoCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,16 +18,20 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRepositories } from '@/hooks/useRepositories'
+import { useApiClient } from '@/api/client'
+import { createRepository } from '@/api/repo'
 import type { Repository } from '@/types'
 
 export function RepositoryListPage() {
-  const { repositories } = useRepositories()
+  const { user } = useUser()
+  const username = user?.publicMetadata?.username as string
+  const { repositories, isLoading } = useRepositories(username)
   const [q, setQ] = React.useState('')
   const [lang, setLang] = React.useState<string | 'all'>('all')
   const [sort, setSort] = React.useState<'updated' | 'stars' | 'name'>('updated')
 
   const languages = React.useMemo(() => {
-    const s = new Set(repositories.map((r) => r.language))
+    const s = new Set(repositories.map((r) => r.language).filter(Boolean))
     return ['all', ...Array.from(s)]
   }, [repositories])
 
@@ -33,7 +40,7 @@ export function RepositoryListPage() {
       const matchesQ =
         !q ||
         r.name.toLowerCase().includes(q.toLowerCase()) ||
-        r.description.toLowerCase().includes(q.toLowerCase())
+        (r.description && r.description.toLowerCase().includes(q.toLowerCase()))
       const matchesLang = lang === 'all' || r.language === lang
       return matchesQ && matchesLang
     })
@@ -50,7 +57,7 @@ export function RepositoryListPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Repositories</h1>
-          <p className="text-sm text-muted-foreground">All repos you can access (mock list).</p>
+          <p className="text-sm text-muted-foreground">Manage your code and collaborations.</p>
         </div>
         <NewRepoDialog />
       </div>
@@ -67,36 +74,42 @@ export function RepositoryListPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
             value={lang}
             onChange={(e) => setLang(e.target.value as typeof lang)}
             aria-label="Filter by language"
           >
             {languages.map((l) => (
-              <option key={l} value={l}>
+              <option key={l} value={l} className="bg-[#111]">
                 {l === 'all' ? 'All languages' : l}
               </option>
             ))}
           </select>
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
             aria-label="Sort repositories"
           >
-            <option value="updated">Last updated</option>
-            <option value="stars">Stars</option>
-            <option value="name">Name</option>
+            <option value="updated" className="bg-[#111]">Last updated</option>
+            <option value="stars" className="bg-[#111]">Stars</option>
+            <option value="name" className="bg-[#111]">Name</option>
           </select>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card className="border-dashed border-rs-border">
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-40 rounded-lg border border-rs-border bg-rs-surface animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card className="border-dashed border-rs-border bg-rs-surface">
           <CardHeader className="flex flex-col items-center py-16 text-center">
             <FolderGit2 className="mb-4 size-16 text-muted-foreground/40" />
             <CardTitle>No repositories found</CardTitle>
-            <CardDescription>Try another search or create a new repository (UI only).</CardDescription>
+            <CardDescription>Try another search or create a new repository.</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -112,6 +125,38 @@ export function RepositoryListPage() {
 
 function NewRepoDialog() {
   const [open, setOpen] = React.useState(false)
+  const [name, setName] = React.useState('')
+  const [description, setDescription] = React.useState('')
+  const [isPrivate, setIsPrivate] = React.useState(false)
+  
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  const createMutation = useMutation({
+    mutationFn: (formData: FormData) => createRepository(client, formData),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message)
+        queryClient.invalidateQueries({ queryKey: ['repositories'] })
+        setOpen(false)
+        setName('')
+        setDescription('')
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.detail || 'Failed to create repository')
+    }
+  })
+
+  const handleCreate = () => {
+    if (!name) return
+    const formData = new FormData()
+    formData.append('name', name)
+    if (description) formData.append('description', description)
+    formData.append('visibility', isPrivate ? 'private' : 'public')
+    createMutation.mutate(formData)
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -120,36 +165,53 @@ function NewRepoDialog() {
           New repository
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-rs-border bg-rs-surface">
+      <DialogContent className="border-rs-border bg-rs-surface text-white">
         <DialogHeader>
           <DialogTitle>Create repository</DialogTitle>
-          <DialogDescription>
-            This dialog is a placeholder until the repository API exists. Names are not persisted.
+          <DialogDescription className="text-muted-foreground">
+            A repository contains all your project's files and revision history.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="repo-name">Name</Label>
-            <Input id="repo-name" placeholder="my-repo" />
+            <Input 
+              id="repo-name" 
+              placeholder="my-repo" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-black/50 border-rs-border"
+            />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="repo-desc">Description</Label>
-            <Input id="repo-desc" placeholder="Short description" />
+            <Label htmlFor="repo-desc">Description (optional)</Label>
+            <Input 
+              id="repo-desc" 
+              placeholder="Short description" 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="bg-black/50 border-rs-border"
+            />
           </div>
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="readme" defaultChecked className="rounded border-input" />
-            <Label htmlFor="readme">Initialize with README</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="private" className="rounded border-input" />
+            <input 
+              type="checkbox" 
+              id="private" 
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="rounded border-rs-border bg-black/50" 
+            />
             <Label htmlFor="private">Private</Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={createMutation.isPending} className="border-rs-border">
             Cancel
           </Button>
-          <Button onClick={() => setOpen(false)}>Create (mock)</Button>
+          <Button onClick={handleCreate} disabled={!name || createMutation.isPending} className="bg-blue-600 hover:bg-blue-500">
+            {createMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Create repository
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

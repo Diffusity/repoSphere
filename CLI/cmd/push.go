@@ -49,12 +49,19 @@ var pushCmd = &cobra.Command{
 			branchName = currentBranch
 		}
 
-		if err := repo.Push(remoteName, branchName); err != nil {
-			fmt.Printf("Error: %v\n", err)
+		config, err := utils.GetConfig()
+		if err != nil {
+			fmt.Printf("Error loading config: %v\n", err)
 			return
 		}
 
-		fmt.Println("Pushed commits to remote repository")
+		remoteObj, ok := config.Remotes[remoteName]
+		if !ok {
+			fmt.Printf("Error: remote '%s' not found\n", remoteName)
+			return
+		}
+
+		repo.Push(remoteObj.URL, branchName)
 	},
 }
 

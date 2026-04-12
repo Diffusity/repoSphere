@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from src.db.database import get_db
 from src.db.models.user import User
+from src.db.models.session import TerminalSession
 from src.services.clerk import decode_clerk_jwt_payload, sync_user_to_database
 from src.services import jwt_service
 
@@ -38,7 +39,18 @@ async def auth_middleware(
     # --- Terminal JWT ---
     elif method == "Terminal":
         decoded = jwt_service.decode_token(token)
-        if decoded and decoded.get("email"):
+        if decoded and decoded.get("email") and decoded.get("sessionId"):
+            # 1. Verify session exists and is active
+            session_id = decoded["sessionId"]
+            session_result = await db.execute(
+                select(TerminalSession).where(TerminalSession.id == session_id)
+            )
+            session = session_result.scalar_one_or_none()
+
+            if not session or session.status != "active":
+                raise HTTPException(status_code=401, detail="Session is inactive or deleted")
+
+            # 2. Verify user matches
             result = await db.execute(
                 select(User).where(User.email == decoded["email"])
             )

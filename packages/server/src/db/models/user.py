@@ -17,6 +17,9 @@ class User(Base):
     clerk_id: Mapped[str | None] = mapped_column(
         String, unique=True, index=True, nullable=True
     )
+    username: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     provider: Mapped[str] = mapped_column(String, nullable=False, default="email")
@@ -35,6 +38,7 @@ class User(Base):
         return {
             "_id": str(self.id),
             "clerkId": self.clerk_id,
+            "username": self.username,
             "name": self.name,
             "email": self.email,
             "provider": self.provider,

@@ -7,6 +7,7 @@ from fastapi.responses import PlainTextResponse
 from src.config.config import CORS_ORIGINS, PORT
 from src.db.database import init_db
 from src.routes.auth import router as auth_router
+from src.routes.repo import router as repo_router
 
 
 @asynccontextmanager
@@ -57,6 +58,7 @@ async def health():
 
 # --- Routes ---
 app.include_router(auth_router)
+app.include_router(repo_router)
 
 
 if __name__ == "__main__":

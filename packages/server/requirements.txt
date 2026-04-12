@@ -7,3 +7,4 @@ pyjwt>=2.10.0
 httpx>=0.28.0
 python-dotenv>=1.0.0
 pydantic>=2.10.0
+boto3>=1.35.0

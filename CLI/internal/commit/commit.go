@@ -13,6 +13,7 @@ import (
 )
 
 type Commit struct {
+	Hash      string    `json:"hash"`
 	Tree      string    `json:"tree"`
 	Parent    string    `json:"parent"`
 	Message   string    `json:"message"`
@@ -39,7 +40,10 @@ func CreateCommit(message string) (string, error) {
 		author = os.Getenv("USERNAME")
 	}
 
+	commitHash := storage.Hash([]byte(stagedTreeHash + string(parentFile) + message + author + time.Now().String()))
+
 	commit := Commit{
+		Hash:      commitHash,
 		Tree:      stagedTreeHash,
 		Parent:    string(parentFile),
 		Message:   message,
@@ -60,12 +64,12 @@ func CreateCommit(message string) (string, error) {
 		return "", err
 	}
 
-	err = os.WriteFile(".rs/refs/heads/master", []byte(stagedTreeHash), 0644)
+	err = os.WriteFile(".rs/refs/heads/master", []byte(commitHash), 0644)
 	if err != nil {
 		return "", err
 	}
 
-	return stagedTreeHash, nil
+	return commitHash, nil
 }
 
 func LogCommits() {

@@ -9,24 +9,28 @@ type HeadCommitApiBody struct {
 	Message string `json:"message"`
 	Data    struct {
 		Exists     bool `json:"exists"`
-		HeadCommit struct {
-			ID        string `json:"_id"`
+		HeadCommit *struct {
+			Hash      string `json:"hash"`
 			Message   string `json:"message"`
 			Author    string `json:"author"`
 			Timestamp string `json:"timestamp"`
-			Hash      string `json:"hash"`
-			Parent    string `json:"parent"`
 		} `json:"headCommit"`
 	} `json:"data"`
 }
 
-type SignedUploadUrlApiBody struct {
+type PushResponseApiBody struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+type RepoInfoApiBody struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    struct {
-		SignedUrl string `json:"signedUrl"`
-		PublicUrl string `json:"publicUrl"`
-		Exists    bool   `json:"exists"`
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		Owner      string `json:"owner"`
+		Visibility string `json:"visibility"`
 	} `json:"data"`
 }
 
@@ -71,6 +75,7 @@ type Tree struct {
 }
 
 type Commit struct {
+	Hash      string    `json:"hash"`
 	Tree      string    `json:"tree"`
 	Parent    string    `json:"parent"`
 	Message   string    `json:"message"`

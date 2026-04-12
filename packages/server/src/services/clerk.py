@@ -10,7 +10,6 @@ from src.db.models.user import User
 
 CLERK_API_BASE = "https://api.clerk.com/v1"
 
-
 async def _clerk_get_user(clerk_user_id: str) -> dict | None:
     """Call Clerk REST API to fetch a user by their Clerk ID."""
     async with httpx.AsyncClient() as client:
@@ -21,6 +20,17 @@ async def _clerk_get_user(clerk_user_id: str) -> dict | None:
         if resp.status_code == 200:
             return resp.json()
     return None
+
+
+async def update_clerk_user_metadata(clerk_user_id: str, public_metadata: dict) -> bool:
+    """Call Clerk REST API to update public_metadata for a user."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.patch(
+            f"{CLERK_API_BASE}/users/{clerk_user_id}",
+            headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+            json={"public_metadata": public_metadata},
+        )
+        return resp.status_code == 200
 
 
 def decode_clerk_jwt_payload(token: str) -> dict | None:
