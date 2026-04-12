@@ -12,10 +12,10 @@ export function RepoCard({ repo }: { repo: Repository }) {
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base font-semibold">
             <Link
-              to={`/${repo.owner}/${repo.name}`}
+              to={`/${repo.ownerUsername}/${repo.name}`}
               className="text-rs-link hover:underline"
             >
-              {repo.owner}/{repo.name}
+              {repo.ownerUsername}/{repo.name}
             </Link>
           </CardTitle>
           <Badge variant={repo.visibility === 'public' ? 'secondary' : 'outline'} className="shrink-0 text-[10px]">

@@ -17,6 +17,23 @@ async def get_user(
     return await auth_controller.get_user(current_user, db)
 
 
+@router.get("/username/available/{username}")
+async def check_username_available(
+    username: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.check_username_available(username, db)
+
+
+@router.post("/username")
+async def set_username(
+    username_data: dict,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.set_username(username_data.get("username"), current_user, db)
+
+
 @router.post("/session")
 async def create_terminal_session(
     db: AsyncSession = Depends(get_db),

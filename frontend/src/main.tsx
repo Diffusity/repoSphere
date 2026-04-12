@@ -25,8 +25,6 @@ createRoot(document.getElementById('root')!).render(
       publishableKey={publishableKey ?? ''}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/dashboard"
-      afterSignUpUrl="/dashboard"
       afterSignOutUrl="/"
     >
       <QueryClientProvider client={queryClient}>

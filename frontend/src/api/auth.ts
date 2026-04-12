@@ -29,6 +29,21 @@ export interface SessionPollResponse {
   message?: string
 }
 
+export async function checkUsernameAvailable(client: AxiosInstance, username: string) {
+  const { data } = await client.get<{ success: boolean; data: { available: boolean } }>(
+    `/api/v1/auth/username/available/${username}`
+  )
+  return data
+}
+
+export async function setUsername(client: AxiosInstance, username: string) {
+  const { data } = await client.post<{ success: boolean; data: User; message: string }>(
+    '/api/v1/auth/username',
+    { username }
+  )
+  return data
+}
+
 export async function fetchCurrentUser(client: AxiosInstance) {
   const { data } = await client.get<AuthUserResponse>('/api/v1/auth/user')
   return data

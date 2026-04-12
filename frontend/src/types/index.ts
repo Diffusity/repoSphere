@@ -1,11 +1,48 @@
 export interface User {
   _id: string
   clerkId: string | null
+  username: string | null
   name: string
   email: string
   provider: 'email' | 'google'
   imageUrl: string | null
   admin: boolean
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  data: T
+  message?: string
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T> {
+  page: number
+  totalPages: number
+  total: number
+}
+
+export interface TreeResponse {
+  data: TreeEntry[]
+}
+
+export interface BlobResponse {
+  content: string
+  encoding: 'utf-8' | 'base64'
+  size: number
+}
+
+export interface ActivityItem {
+  user: string
+  message: string
+  hash: string
+  time: string
+  repo: string
+}
+
+export interface UserStats {
+  repoCount: number
+  commitsToday: number
+  contributors: number
 }
 
 export interface CommitSummary {
@@ -18,7 +55,8 @@ export interface CommitSummary {
 export interface Repository {
   id: string
   name: string
-  owner: string
+  ownerId: string
+  ownerUsername: string
   description: string
   visibility: 'public' | 'private'
   stars: number

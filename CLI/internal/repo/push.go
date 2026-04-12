@@ -15,6 +15,12 @@ import (
 )
 
 func Push(remote string, branchName string) {
+	session := utils.GetSession()
+	if session.Token == "" {
+		fmt.Println("Error: Not logged in. Run 'rs login' first.")
+		return
+	}
+
 	// 1. Resolve Remote URL to owner/repo
 	parsedURL, err := url.Parse(remote)
 	if err != nil {
@@ -49,7 +55,7 @@ func Push(remote string, branchName string) {
 	for i := len(localCommits) - 1; i >= 0; i-- {
 		commit := localCommits[i]
 		if !foundRemoteHead {
-			if commit.Tree == remoteHeadHash {
+			if commit.Hash == remoteHeadHash {
 				foundRemoteHead = true
 				continue
 			}
@@ -90,13 +96,12 @@ func Push(remote string, branchName string) {
 	}
 
 	// 6. Unified Push call
+	fmt.Printf("Pushing %d commit(s) and %d new blob(s)...\n", len(commitsToPush), len(blobs))
 	err = apis.PushToRemote(owner, repoName, branchName, commitsToPush, treesToPush, blobs)
 	if err != nil {
 		fmt.Printf("Push failed: %v\n", err)
 		return
 	}
-
-	fmt.Println("Done.")
 }
 
 // GetCommitsFromHead reads the commit log for the given branch

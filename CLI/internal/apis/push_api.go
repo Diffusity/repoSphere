@@ -38,12 +38,14 @@ func PushToRemote(owner, name string, branchName string, commits []types.Commit,
 	metadataPart.Write(metadataJSON)
 
 	// Files (blobs)
-	for hash, data := range blobs {
-		filePart, err := writer.CreateFormFile("files", hash)
-		if err != nil {
-			return err
+	if len(blobs) > 0 {
+		for hash, data := range blobs {
+			filePart, err := writer.CreateFormFile("files", hash)
+			if err != nil {
+				return err
+			}
+			filePart.Write(data)
 		}
-		filePart.Write(data)
 	}
 
 	err = writer.Close()
@@ -65,9 +67,17 @@ func PushToRemote(owner, name string, branchName string, commits []types.Commit,
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("push failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var parsedResp map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &parsedResp); err == nil {
+		if msg, ok := parsedResp["message"].(string); ok {
+			fmt.Println("Server:", msg)
+		}
 	}
 
 	return nil

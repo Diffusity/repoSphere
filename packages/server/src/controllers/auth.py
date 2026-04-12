@@ -1,13 +1,58 @@
 import uuid
+import re
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
 from src.db.models.user import User
 from src.db.models.session import TerminalSession
-from src.services import jwt_service
+from src.services import jwt_service, clerk as clerk_service
+
+
+async def check_username_available(
+    username: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """GET /api/v1/user/username/available/{username} — Check availability."""
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+    return {"success": True, "data": {"available": user is None}}
+
+
+async def set_username(
+    username: str,
+    current_user: User = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    """POST /api/v1/user/username — Set username."""
+    # 1. Validation
+    if not username or len(username) < 3 or len(username) > 30:
+        raise HTTPException(status_code=400, detail="Username must be between 3 and 30 characters")
+    
+    if not re.match(r"^[a-z][a-z0-9_]*$", username):
+        raise HTTPException(
+            status_code=400, 
+            detail="Username must start with a letter and contain only lowercase letters, numbers, and underscores"
+        )
+
+    # 2. Check uniqueness
+    result = await db.execute(select(User).where(User.username == username))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # 3. Update local DB
+    current_user.username = username
+    await db.commit()
+
+    # 4. Sync to Clerk public metadata
+    if current_user.clerk_id:
+        await clerk_service.update_clerk_user_metadata(
+            current_user.clerk_id, {"username": username}
+        )
+
+    return {"success": True, "message": "Username set successfully", "data": current_user.to_dict()}
 
 
 async def get_user(
