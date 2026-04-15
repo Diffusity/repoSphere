@@ -1,9 +1,24 @@
+import ssl as _ssl
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
 from src.config.config import DATABASE_URL
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+# Neon requires SSL; detect automatically from the URL
+_connect_args = {}
+if "neon.tech" in DATABASE_URL:
+    ssl_ctx = _ssl.create_default_context()
+    _connect_args["ssl"] = ssl_ctx
+
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,        # detect stale connections (Neon may drop idle)
+    pool_size=5,               # keep small; Neon has its own pooler
+    max_overflow=10,
+    pool_recycle=300,           # recycle connections every 5 min
+    connect_args=_connect_args,
+)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
