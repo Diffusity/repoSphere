@@ -4,11 +4,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
 from src.db.models.user import User
-from src.middlewares.auth import auth_middleware
+from src.middlewares.auth import auth_middleware, optional_auth_middleware
 from src.controllers import repo as repo_controller
 
 router = APIRouter(prefix="/api/v1/repo", tags=["repo"])
 
+@router.get("/{owner}/{name}/pull")
+async def pull_from_remote(
+    owner: str,
+    name: str,
+    local_head: str | None = None,
+    current_user: User | None = Depends(optional_auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.pull(
+        owner, name, local_head, current_user, db
+    )
 
 @router.post("")
 async def create_repository(
@@ -153,3 +164,14 @@ async def push(
     return await repo_controller.push(
         owner, name, metadata, files, current_user, db
     )
+
+
+@router.get("/{owner}/{name}/pull")
+async def pull(
+    owner: str,
+    name: str,
+    local_head: str | None = None,
+    current_user: User | None = Depends(optional_auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.pull(owner, name, local_head, current_user, db)
