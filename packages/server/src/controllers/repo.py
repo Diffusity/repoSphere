@@ -687,3 +687,108 @@ async def get_user_stats(
             "contributors": contributors,
         },
     }
+
+
+async def pull(
+    owner_username: str,
+    name: str,
+    local_head: str | None,
+    current_user: User | None,
+    db: AsyncSession,
+):
+    """GET /api/v1/repo/{owner}/{name}/pull — Pull controller."""
+    # 1. Get Repo
+    result = await db.execute(
+        select(Repository)
+        .join(User)
+        .where(User.username == owner_username, Repository.name == name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    # 2. Check access
+    if repo.visibility == "private":
+        if not current_user or repo.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    # 3. Get master branch head
+    branch_result = await db.execute(
+        select(Branch).where(Branch.repo_id == repo.id, Branch.name == "master")
+    )
+    branch = branch_result.scalar_one_or_none()
+    
+    if not branch or not branch.head_commit_id:
+        return {"success": True, "data": {"commits": [], "trees": {}, "blob_urls": {}}}
+
+    # 4. Traverse commits back to local_head
+    commits = []
+    trees_map: Dict[str, Dict[str, str]] = {}
+    blob_hashes = set()
+    
+    current_commit_id = branch.head_commit_id
+    
+    while current_commit_id:
+        c_res = await db.execute(select(Commit).where(Commit.id == current_commit_id))
+        commit = c_res.scalar_one_or_none()
+        
+        if not commit:
+            break
+            
+        if commit.hash == local_head:
+            break
+            
+        commits.append({
+            "hash": commit.hash,
+            "parent": commit.parent_hash,
+            "tree": commit.tree_hash,
+            "message": commit.message,
+            "author": commit.author,
+            "timestamp": commit.timestamp.isoformat().replace("+00:00", "Z"),
+        })
+        
+        # Get tree entries if we haven't seen this tree
+        if commit.tree_hash not in trees_map:
+            t_res = await db.execute(
+                select(TreeEntry).where(TreeEntry.tree_hash == commit.tree_hash)
+            )
+            entries = t_res.scalars().all()
+            
+            tree_dict = {}
+            for e in entries:
+                tree_dict[e.file_path] = e.blob_hash
+                blob_hashes.add(e.blob_hash)
+                
+            trees_map[commit.tree_hash] = tree_dict
+            
+        if not commit.parent_hash:
+            break
+            
+        # Find parent commit ID
+        p_res = await db.execute(
+            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == commit.parent_hash)
+        )
+        current_commit_id = p_res.scalar_one_or_none()
+        
+    # Reverse commits so oldest comes first
+    commits.reverse()
+    
+    # 5. Generate Presigned URLs
+    blob_urls = {}
+    for b_hash in blob_hashes:
+        # Check if blob actually exists
+        blob_res = await db.execute(
+            select(Blob).where(Blob.repo_id == repo.id, Blob.hash == b_hash)
+        )
+        if blob_res.scalar_one_or_none():
+            url = await r2_service.generate_presigned_url(b_hash)
+            blob_urls[b_hash] = url
+
+    return {
+        "success": True,
+        "data": {
+            "commits": commits,
+            "trees": trees_map,
+            "blob_urls": blob_urls,
+        }
+    }

@@ -53,6 +53,17 @@ type CheckSessionApiBody struct {
 	} `json:"data"`
 }
 
+type PullResponseApiBody struct {
+	Success bool     `json:"success"`
+	Data    PullData `json:"data"`
+}
+
+type PullData struct {
+	Commits  []Commit                     `json:"commits"`
+	Trees    map[string]map[string]string `json:"trees"`
+	BlobUrls map[string]string            `json:"blob_urls"` // hash -> presigned URL
+}
+
 // Local data types
 
 type Remote struct {
