@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { FolderGit2, Plus, Search, Loader2 } from 'lucide-react'
-import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { RepoCard } from '@/components/common/RepoCard'
@@ -20,11 +19,11 @@ import { Label } from '@/components/ui/label'
 import { useRepositories } from '@/hooks/useRepositories'
 import { useApiClient } from '@/api/client'
 import { createRepository } from '@/api/repo'
+import { useAuthStore } from '@/stores/authStore'
 import type { Repository } from '@/types'
 
 export function RepositoryListPage() {
-  const { user } = useUser()
-  const username = user?.publicMetadata?.username as string
+  const username = useAuthStore((s) => s.user?.username ?? '')
   const { repositories, isLoading } = useRepositories(username)
   const [q, setQ] = React.useState('')
   const [lang, setLang] = React.useState<string | 'all'>('all')

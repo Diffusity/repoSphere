@@ -1,9 +1,9 @@
-import { SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { Code2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { TerminalBlock } from '@/components/common/TerminalBlock'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/stores/authStore'
 
 const features = [
   {
@@ -16,7 +16,7 @@ const features = [
   },
   {
     title: 'Secure auth',
-    description: 'Clerk for the browser, terminal JWT handoff for the CLI—never mixed in one header.',
+    description: 'Cookie-based web auth with terminal JWT handoff for the CLI—never mixed in one header.',
   },
   {
     title: 'Open protocol',
@@ -25,6 +25,9 @@ const features = [
 ]
 
 export function LandingPage() {
+  const isSignedIn = useAuthStore((s) => s.isSignedIn)
+  const logout = useAuthStore((s) => s.logout)
+
   return (
     <div className="min-h-screen bg-rs-bg">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
@@ -32,30 +35,29 @@ export function LandingPage() {
           RepoSphere
         </Link>
         <div className="flex items-center gap-2">
-          <SignedOut>
-            <SignInButton mode="modal">
-              <Button variant="ghost" size="sm">
-                Sign in
+          {!isSignedIn ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/sign-in">Sign in</Link>
               </Button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <Button size="sm">Sign up</Button>
-            </SignUpButton>
-          </SignedOut>
-          <SignedIn>
+              <Button size="sm" asChild>
+                <Link to="/sign-up">Sign up</Link>
+              </Button>
+            </>
+          ) : (
+            <>
             <Button size="sm" variant="outline" asChild>
               <Link to="/dashboard">Dashboard</Link>
             </Button>
-            <SignOutButton>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => void logout()}>
                 Sign out
               </Button>
-            </SignOutButton>
-          </SignedIn>
+            </>
+          )}
         </div>
       </nav>
 
-      <section className="relative overflow-hidden border-y border-rs-border bg-gradient-to-b from-[#161b22] via-rs-bg to-rs-bg px-4 py-20 md:px-8">
+      <section className="relative overflow-hidden border-y border-rs-border bg-linear-to-b from-[#161b22] via-rs-bg to-rs-bg px-4 py-20 md:px-8">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
           <div>
             <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
@@ -66,16 +68,15 @@ export function LandingPage() {
               with a modern web app—one model for local commits and collaborative browsing.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <SignedOut>
-                <SignUpButton mode="modal">
-                  <Button size="lg">Get started</Button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
+              {!isSignedIn ? (
+                <Button size="lg" asChild>
+                  <Link to="/sign-up">Get started</Link>
+                </Button>
+              ) : (
                 <Button size="lg" asChild>
                   <Link to="/dashboard">Open dashboard</Link>
                 </Button>
-              </SignedIn>
+              )}
               <Button size="lg" variant="outline" asChild>
                 <Link to="/explore">View demo</Link>
               </Button>

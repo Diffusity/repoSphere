@@ -1,13 +1,16 @@
 import { Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
 import { CommitDetailPage } from '@/pages/CommitDetailPage'
 import { CommitListPage } from '@/pages/CommitListPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ExplorePage } from '@/pages/ExplorePage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { RepositoryListPage } from '@/pages/RepositoryListPage'
 import { RepositoryPage } from '@/pages/RepositoryPage'
 import { SettingsPage } from '@/pages/SettingsPage'
@@ -15,15 +18,26 @@ import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { TerminalAuthPage } from '@/pages/TerminalAuthPage'
 import { SetupUsernamePage } from '@/pages/SetupUsernamePage'
+import { VerifyEmailPage } from '@/pages/VerifyEmailPage'
 import { useKeepAlive } from '@/hooks/useKeepAlive'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function App() {
   useKeepAlive()
+  const initAuth = useAuthStore((s) => s.init)
+
+  useEffect(() => {
+    void initAuth()
+  }, [initAuth])
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/sign-in/*" element={<SignInPage />} />
-      <Route path="/sign-up/*" element={<SignUpPage />} />
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/sign-up" element={<SignUpPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/setup-username" element={<SetupUsernamePage />} />
       <Route path="/terminal" element={<TerminalAuthPage />} />
 

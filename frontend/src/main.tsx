@@ -1,4 +1,3 @@
-import { ClerkProvider } from '@clerk/clerk-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { StrictMode } from 'react'
@@ -14,27 +13,15 @@ const queryClient = new QueryClient({
   },
 })
 
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-if (!publishableKey) {
-  console.error('Missing VITE_CLERK_PUBLISHABLE_KEY')
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider
-      publishableKey={publishableKey ?? ''}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignOutUrl="/"
-    >
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </TooltipProvider>
-        {import.meta.env.DEV ? <ReactQueryDevtools buttonPosition="bottom-left" /> : null}
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </TooltipProvider>
+      {import.meta.env.DEV ? <ReactQueryDevtools buttonPosition="bottom-left" /> : null}
+    </QueryClientProvider>
   </StrictMode>
 )

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
 import { useUsernameAvailability, useSetUsername } from '@/hooks/useUsername'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2, CheckCircle2, XCircle, User as UserIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/authStore'
 
 export function SetupUsernamePage() {
-  const { user, isLoaded } = useUser()
+  const user = useAuthStore((s) => s.user)
+  const isLoaded = useAuthStore((s) => s.isLoaded)
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsernameInput] = useState('')
@@ -29,7 +30,7 @@ export function SetupUsernamePage() {
 
   useEffect(() => {
     // If user already has a username, redirect to dashboard or original page
-    if (isLoaded && user?.publicMetadata?.username) {
+    if (isLoaded && user?.username) {
       navigate(from + search, { replace: true })
     }
   }, [isLoaded, user, navigate, from, search])

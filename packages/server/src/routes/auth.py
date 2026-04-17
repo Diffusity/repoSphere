@@ -9,6 +9,85 @@ from src.controllers import auth as auth_controller
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
+@router.post("/register")
+async def register(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.register(
+        payload.get("name", ""),
+        payload.get("email", ""),
+        payload.get("password", ""),
+        db,
+    )
+
+
+@router.post("/verify-email")
+async def verify_email(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.verify_email(
+        payload.get("email", ""),
+        payload.get("otp", ""),
+        db,
+    )
+
+
+@router.post("/resend-otp")
+async def resend_otp(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.resend_otp(payload.get("email", ""), db)
+
+
+@router.post("/login")
+async def login(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.login(
+        payload.get("email", ""),
+        payload.get("password", ""),
+        db,
+    )
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.forgot_password(payload.get("email", ""), db)
+
+
+@router.post("/reset-password")
+async def reset_password(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.reset_password(
+        payload.get("email", ""),
+        payload.get("otp", ""),
+        payload.get("newPassword", ""),
+        db,
+    )
+
+
+@router.get("/google")
+async def google_redirect():
+    return await auth_controller.google_redirect()
+
+
+@router.get("/google/callback")
+async def google_callback(
+    code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await auth_controller.google_callback(code, db)
+
+
 @router.get("/user")
 async def get_user(
     current_user: User = Depends(auth_middleware),
