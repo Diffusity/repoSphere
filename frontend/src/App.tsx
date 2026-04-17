@@ -15,8 +15,10 @@ import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { TerminalAuthPage } from '@/pages/TerminalAuthPage'
 import { SetupUsernamePage } from '@/pages/SetupUsernamePage'
+import { useKeepAlive } from '@/hooks/useKeepAlive'
 
 export default function App() {
+  useKeepAlive()
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
