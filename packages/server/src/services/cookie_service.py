@@ -12,7 +12,7 @@ def set_auth_cookie(response: Response, token: str) -> Response:
         max_age=_MAX_AGE_SECONDS,
         httponly=True,
         secure=COOKIE_SECURE,
-        samesite="lax",
+        samesite="none" if COOKIE_SECURE else "lax",
         path="/",
     )
     return response
@@ -25,7 +25,7 @@ def clear_auth_cookie(response: Response) -> Response:
         max_age=0,
         httponly=True,
         secure=COOKIE_SECURE,
-        samesite="lax",
+        samesite="none" if COOKIE_SECURE else "lax",
         path="/",
     )
     return response
