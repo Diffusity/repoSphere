@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { RepoCard } from '@/components/common/RepoCard'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,7 +13,7 @@ export function ExplorePage() {
   const [q, setQ] = React.useState('')
   const [debouncedQ, setDebouncedQ] = React.useState('')
   const [pill, setPill] = React.useState('All')
-  
+
   const client = useApiClient()
 
   React.useEffect(() => {
@@ -23,9 +23,9 @@ export function ExplorePage() {
 
   const { data: exploreRes, isLoading } = useQuery({
     queryKey: ['explore', debouncedQ, pill],
-    queryFn: () => fetchExploreRepositories(client, { 
-      search: debouncedQ, 
-      language: pill === 'All' ? undefined : pill 
+    queryFn: () => fetchExploreRepositories(client, {
+      search: debouncedQ,
+      language: pill === 'All' ? undefined : pill
     })
   })
 
@@ -65,18 +65,17 @@ export function ExplorePage() {
             className="pl-9 bg-rs-surface border-rs-border"
           />
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {languages.map((l) => (
             <button
               key={l}
               type="button"
               onClick={() => setPill(l)}
-              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all ${
-                pill === l
+              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all ${pill === l
                   ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                   : 'border-rs-border text-muted-foreground hover:border-rs-link/50'
-              }`}
+                }`}
             >
               {l}
             </button>
