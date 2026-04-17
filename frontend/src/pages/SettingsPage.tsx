@@ -1,4 +1,3 @@
-import { UserProfile, useUser } from '@clerk/clerk-react'
 import { CLIAuthBridge } from '@/components/auth/CLIAuthBridge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,9 +5,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuthStore } from '@/stores/authStore'
 
 export function SettingsPage() {
-  const { user } = useUser()
+  const user = useAuthStore((s) => s.user)
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -34,17 +34,17 @@ export function SettingsPage() {
               <div className="flex flex-wrap items-center gap-6">
                 <Avatar className="size-20 border border-rs-border">
                   <AvatarImage src={user?.imageUrl ?? undefined} />
-                  <AvatarFallback className="text-xl">{user?.firstName?.[0] ?? 'U'}</AvatarFallback>
+                  <AvatarFallback className="text-xl">{user?.name?.[0] ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
-                  <p className="font-medium">{user?.fullName}</p>
-                  <p className="text-sm text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+                  <p className="font-medium">{user?.name}</p>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="disp">Display name</Label>
-                  <Input id="disp" defaultValue={user?.fullName ?? ''} />
+                  <Input id="disp" defaultValue={user?.name ?? ''} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location</Label>
@@ -64,13 +64,14 @@ export function SettingsPage() {
 
           <Card className="border-rs-border bg-rs-surface">
             <CardHeader>
-              <CardTitle>Manage account</CardTitle>
-              <CardDescription>Security, OAuth providers, and sessions via Clerk.</CardDescription>
+              <CardTitle>Account security</CardTitle>
+              <CardDescription>Password and provider management will be configurable here.</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <div className="min-h-[520px]">
-                <UserProfile routing="hash" />
-              </div>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                This section now uses RepoSphere native authentication. Provider linking and password update UI can be
+                added next.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

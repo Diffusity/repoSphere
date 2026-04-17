@@ -1,4 +1,3 @@
-import { useAuth, SignInButton, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { Loader2, Terminal, CheckCircle2, AlertCircle } from 'lucide-react'
 import * as React from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
@@ -6,11 +5,13 @@ import { completeTerminalSession } from '@/api/auth'
 import { useApiClient } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuthStore } from '@/stores/authStore'
 
 export function TerminalAuthPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
-  const { isLoaded, isSignedIn } = useAuth()
+  const isLoaded = useAuthStore((s) => s.isLoaded)
+  const isSignedIn = useAuthStore((s) => s.isSignedIn)
   const apiClient = useApiClient()
   const navigate = useNavigate()
 
@@ -83,26 +84,27 @@ export function TerminalAuthPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <SignedOut>
+          {!isSignedIn ? (
             <div className="rounded-lg border border-rs-border bg-rs-bg p-4 text-center">
               <p className="mb-4 text-sm text-muted-foreground">
                 You need to be signed in to authorize your terminal.
               </p>
-              <SignInButton mode="modal">
-                <Button className="w-full">Sign In to Continue</Button>
-              </SignInButton>
+              <Button className="w-full" onClick={() => navigate(`/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}>
+                Sign In to Continue
+              </Button>
             </div>
-          </SignedOut>
+          ) : null}
 
-          <SignedIn>
-            {status === 'idle' || status === 'loading' ? (
+          {isSignedIn ? (
+            <>
+              {status === 'idle' || status === 'loading' ? (
               <div className="flex flex-col items-center py-6">
                 <Loader2 className="mb-4 size-10 animate-spin text-rs-link" />
                 <p className="text-sm text-muted-foreground">Authorizing your session...</p>
               </div>
-            ) : null}
+              ) : null}
 
-            {status === 'success' ? (
+              {status === 'success' ? (
               <div className="flex flex-col items-center space-y-4 py-6 text-center">
                 <CheckCircle2 className="size-16 text-rs-accent" />
                 <div className="space-y-1">
@@ -115,9 +117,9 @@ export function TerminalAuthPage() {
                   Close Window
                 </Button>
               </div>
-            ) : null}
+              ) : null}
 
-            {status === 'error' ? (
+              {status === 'error' ? (
               <div className="flex flex-col items-center space-y-4 py-6 text-center">
                 <AlertCircle className="size-16 text-rs-danger" />
                 <div className="space-y-1">
@@ -130,8 +132,9 @@ export function TerminalAuthPage() {
                   </Button>
                 </div>
               </div>
-            ) : null}
-          </SignedIn>
+              ) : null}
+            </>
+          ) : null}
         </CardContent>
       </Card>
     </div>

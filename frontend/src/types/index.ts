@@ -1,10 +1,12 @@
 export interface User {
   _id: string
-  clerkId: string | null
+  googleId?: string | null
   username: string | null
   name: string
   email: string
   provider: 'email' | 'google'
+  hasPassword?: boolean
+  emailVerified?: boolean
   imageUrl: string | null
   admin: boolean
 }

@@ -1,4 +1,3 @@
-import { useUser } from '@clerk/clerk-react'
 import { GitBranchPlus, Plus, Sparkles, Terminal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -10,26 +9,28 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useRepositories } from '@/hooks/useRepositories'
 import { formatRelativeTime, truncateHash } from '@/lib/utils'
+import { useAuthStore } from '@/stores/authStore'
 
 import { useUserActivity, useUserStats } from '@/hooks/useRepository'
 
 export function DashboardPage() {
-  const { user, isLoaded: clerkLoaded } = useUser()
+  const user = useAuthStore((s) => s.user)
+  const authLoaded = useAuthStore((s) => s.isLoaded)
   const { data: me, isLoading: userLoading } = useCurrentUser()
   
-  const username = (user?.publicMetadata?.username as string) || (me?.user.username as string)
+  const username = user?.username || me?.user.username || ''
   const { repositories, isLoading: reposLoading } = useRepositories(username)
   const { data: activityData, isLoading: activityLoading } = useUserActivity(username)
   const { data: statsData, isLoading: statsLoading } = useUserStats(username)
 
-  const displayName = user?.fullName ?? me?.user.name ?? 'there'
+  const displayName = user?.name ?? me?.user.name ?? 'there'
   const activityList = activityData?.success ? activityData.data : []
   const stats = statsData?.success ? statsData.data : { repoCount: 0, commitsToday: 0, contributors: 0 }
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-center gap-4 rounded-lg border border-rs-border bg-rs-surface p-6">
-        {!clerkLoaded || userLoading ? (
+        {!authLoaded || userLoading ? (
           <Skeleton className="size-14 rounded-full" />
         ) : (
           <Avatar className="size-14 border border-rs-border">

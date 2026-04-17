@@ -5,7 +5,7 @@ from sqlalchemy import select
 from src.db.database import get_db
 from src.db.models.user import User
 from src.db.models.session import TerminalSession
-from src.services.clerk import decode_clerk_jwt_payload, sync_user_to_database
+from src.services.cookie_service import get_auth_cookie
 from src.services import jwt_service
 
 
@@ -13,31 +13,14 @@ async def auth_middleware(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """FastAPI dependency that authenticates via Clerk Bearer or Terminal JWT.
+    """FastAPI dependency that authenticates via cookie/Bearer or Terminal JWT.
     Returns the authenticated User or raises 401."""
-
     auth_header = request.headers.get("authorization", "")
     parts = auth_header.split(" ", 1)
-    if len(parts) != 2:
-        raise HTTPException(status_code=401, detail="No authorization token provided")
-
-    method, token = parts[0], parts[1]
-
-    # --- Clerk Bearer token ---
-    if method == "Bearer":
-        payload = decode_clerk_jwt_payload(token)
-        clerk_user_id = payload.get("sub") if payload else None
-
-        if clerk_user_id:
-            user = await sync_user_to_database(clerk_user_id, db)
-            if not user:
-                raise HTTPException(
-                    status_code=500, detail="Failed to sync user to database"
-                )
-            return user
 
     # --- Terminal JWT ---
-    elif method == "Terminal":
+    if len(parts) == 2 and parts[0] == "Terminal":
+        token = parts[1]
         decoded = jwt_service.decode_token(token)
         if decoded and decoded.get("email") and decoded.get("sessionId"):
             # 1. Verify session exists and is active
@@ -59,6 +42,33 @@ async def auth_middleware(
                 return user
         raise HTTPException(status_code=401, detail="Invalid terminal token")
 
+    # --- Browser JWT from cookie first, then Bearer fallback ---
+    token = get_auth_cookie(request)
+    if not token and len(parts) == 2 and parts[0] == "Bearer":
+        token = parts[1]
+
+    if not token:
+        raise HTTPException(status_code=401, detail="No authorization token provided")
+
+    decoded = jwt_service.decode_token(token)
+    if not decoded:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user_id = decoded.get("sub")
+    email = decoded.get("email")
+
+    if user_id:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            return user
+
+    if email:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user:
+            return user
+
     raise HTTPException(status_code=401, detail="Authentication failed")
 
 
@@ -66,20 +76,7 @@ async def optional_auth_middleware(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
-    """FastAPI dependency that tries to authenticate but returns None if it fails
-    or if no token is provided. Useful for public endpoints that can optionally
-    use user context."""
-    try:
-        return await auth_middleware(request, db)
-    except HTTPException:
-        return None
-
-async def optional_auth_middleware(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-) -> User | None:
-    """FastAPI dependency that attempts to authenticate via Clerk Bearer or Terminal JWT.
-    Returns the authenticated User or None if not provided or invalid."""
+    """Authenticate when possible, otherwise return None."""
     try:
         return await auth_middleware(request, db)
     except HTTPException:

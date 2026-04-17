@@ -1,6 +1,5 @@
-import { SignOutButton, useUser } from '@clerk/clerk-react'
 import { Bell, Search } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +12,19 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useAuthStore } from '@/stores/authStore'
 
 export function Topbar() {
-  const { user } = useUser()
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
   const { data: apiUser } = useCurrentUser()
-  const handle = apiUser?.user.email?.split('@')[0] ?? user?.username ?? 'user'
+  const handle = apiUser?.user.username ?? user?.username ?? apiUser?.user.email?.split('@')[0] ?? 'user'
+
+  const onSignOut = async () => {
+    await logout()
+    navigate('/')
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-4 border-b border-rs-border bg-rs-bg/90 pl-14 pr-4 backdrop-blur md:pl-6 md:pr-6">
@@ -38,16 +45,16 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
               <Avatar className="size-9 border border-rs-border">
-                <AvatarImage src={user?.imageUrl ?? undefined} alt={user?.fullName ?? ''} />
-                <AvatarFallback>{user?.firstName?.[0] ?? 'U'}</AvatarFallback>
+                <AvatarImage src={user?.imageUrl ?? undefined} alt={user?.name ?? ''} />
+                <AvatarFallback>{user?.name?.[0] ?? 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 border-rs-border bg-rs-surface">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{user?.fullName ?? 'Account'}</p>
-                <p className="text-xs text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+                <p className="text-sm font-medium">{user?.name ?? 'Account'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -58,9 +65,9 @@ export function Topbar() {
               <Link to="/settings">Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <SignOutButton>
-              <DropdownMenuItem className="text-rs-danger focus:text-rs-danger">Sign out</DropdownMenuItem>
-            </SignOutButton>
+            <DropdownMenuItem className="text-rs-danger focus:text-rs-danger" onClick={() => void onSignOut()}>
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

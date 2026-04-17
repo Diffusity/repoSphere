@@ -1,10 +1,11 @@
-import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCurrentUser } from '@/api/auth'
 import { useApiClient } from '@/api/client'
+import { useAuthStore } from '@/stores/authStore'
 
 export function useCurrentUser() {
-  const { isSignedIn, isLoaded } = useAuth()
+  const isSignedIn = useAuthStore((s) => s.isSignedIn)
+  const isLoaded = useAuthStore((s) => s.isLoaded)
   const client = useApiClient()
 
   return useQuery({

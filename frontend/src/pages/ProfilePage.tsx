@@ -1,4 +1,3 @@
-import { useUser } from '@clerk/clerk-react'
 import { Link, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -6,18 +5,21 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { RepoCard } from '@/components/common/RepoCard'
 import { useRepositories } from '@/hooks/useRepositories'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuthStore } from '@/stores/authStore'
+import { Button } from '@/components/ui/button'
 
 export function ProfilePage() {
   const { username = '' } = useParams()
-  const { user, isLoaded: userLoaded } = useUser()
+  const user = useAuthStore((s) => s.user)
+  const userLoaded = useAuthStore((s) => s.isLoaded)
   const { repositories, isLoading } = useRepositories(username)
 
   const isYou = userLoaded && (
-    user?.publicMetadata?.username === username || 
-    user?.primaryEmailAddress?.emailAddress.split('@')[0] === username
+    user?.username === username ||
+    user?.email.split('@')[0] === username
   )
   
-  const displayName = isYou ? (user?.fullName || username) : username
+  const displayName = isYou ? (user?.name || username) : username
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 lg:px-0">
@@ -81,5 +83,3 @@ export function ProfilePage() {
 function Separator() {
   return <div className="h-px w-full bg-rs-border" />
 }
-
-import { Button } from '@/components/ui/button'
