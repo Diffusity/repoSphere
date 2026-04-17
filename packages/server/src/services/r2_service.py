@@ -63,3 +63,21 @@ async def blob_exists(hash: str) -> bool:
         return True
     except Exception:
         return False
+
+
+async def generate_presigned_url(hash: str, expiration: int = 3600) -> str:
+    """Generate a presigned GET URL for a blob."""
+    key = f"objects/{hash[:2]}/{hash[2:]}"
+    loop = asyncio.get_running_loop()
+    
+    # generate_presigned_url does not make an API call, it just signs it locally,
+    # but we'll run it in executor just in case to be safe and consistent.
+    url = await loop.run_in_executor(
+        None,
+        lambda: s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": R2_BUCKET_NAME, "Key": key},
+            ExpiresIn=expiration,
+        )
+    )
+    return url

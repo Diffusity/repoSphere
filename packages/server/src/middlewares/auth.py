@@ -60,3 +60,28 @@ async def auth_middleware(
         raise HTTPException(status_code=401, detail="Invalid terminal token")
 
     raise HTTPException(status_code=401, detail="Authentication failed")
+
+
+async def optional_auth_middleware(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """FastAPI dependency that tries to authenticate but returns None if it fails
+    or if no token is provided. Useful for public endpoints that can optionally
+    use user context."""
+    try:
+        return await auth_middleware(request, db)
+    except HTTPException:
+        return None
+
+async def optional_auth_middleware(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """FastAPI dependency that attempts to authenticate via Clerk Bearer or Terminal JWT.
+    Returns the authenticated User or None if not provided or invalid."""
+    try:
+        return await auth_middleware(request, db)
+    except HTTPException:
+        return None
+
