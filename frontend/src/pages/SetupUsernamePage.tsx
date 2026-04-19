@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useUsernameAvailability, useSetUsername } from '@/hooks/useUsername'
-import { Button } from '@/components/ui/button'
+import { AtSign, CheckCircle2, Loader2, UserRound, XCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  AuthActionButton,
+  AuthAlert,
+  AuthLinkRow,
+  AuthShell,
+  authInputClassName,
+} from '@/components/auth/AuthShell'
 import { Input } from '@/components/ui/input'
-import { Loader2, CheckCircle2, XCircle, User as UserIcon } from 'lucide-react'
-import { toast } from 'sonner'
+import { Label } from '@/components/ui/label'
+import { useUsernameAvailability, useSetUsername } from '@/hooks/useUsername'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 
 export function SetupUsernamePage() {
@@ -14,6 +21,7 @@ export function SetupUsernamePage() {
   const location = useLocation()
   const [username, setUsernameInput] = useState('')
   const [debouncedUsername, setDebouncedUsername] = useState('')
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const from = location.state?.from?.pathname || '/dashboard'
   const search = location.state?.from?.search || ''
@@ -24,98 +32,125 @@ export function SetupUsernamePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedUsername(username)
-    }, 500)
+    }, 350)
     return () => clearTimeout(timer)
   }, [username])
 
   useEffect(() => {
-    // If user already has a username, redirect to dashboard or original page
     if (isLoaded && user?.username) {
       navigate(from + search, { replace: true })
     }
   }, [isLoaded, user, navigate, from, search])
 
-  const handleSumbit = async (e: React.FormEvent) => {
+  const usernameTooShort = username.length > 0 && username.length < 3
+  const usernameAvailable = username.length >= 3 && availability?.data?.available
+  const usernameTaken = username.length >= 3 && !isChecking && availability?.data?.available === false
+
+  const availabilityMessage = usernameTooShort
+    ? 'Use at least 3 characters.'
+    : usernameTaken
+      ? 'That username is already taken.'
+      : usernameAvailable
+        ? 'Great choice. That username is available.'
+        : 'Use lowercase letters, numbers, or underscores.'
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
+
     if (!availability?.data?.available) return
 
     try {
       await setUsernameMutation.mutateAsync(username)
-      toast.success('Username set successfully!')
       navigate(from + search, { replace: true })
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to set username')
+    } catch (err) {
+      const message: string =
+        err instanceof Error
+          ? err.message || 'Failed to set username'
+          : typeof err === 'object' &&
+              err !== null &&
+              'response' in err &&
+              typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
+            ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Failed to set username'
+            : 'Failed to set username'
+      setSubmitError(message)
     }
   }
 
   if (!isLoaded) return null
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
-        {/* Glow effect */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 blur-[100px] rounded-full group-hover:bg-blue-500/20 transition-all duration-700" />
-        
-        <div className="relative z-10">
-          <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6">
-            <UserIcon className="w-8 h-8 text-blue-400" />
-          </div>
+    <AuthShell
+      badge="Final step"
+      title="Choose your username"
+      description="Pick the handle for your profile and repository URLs."
+      backHref="/dashboard"
+      backLabel="Back to app"
+      panelTitle="Finish account setup with a handle that fits."
+      panelDescription="This step keeps momentum high after verification or social sign-in. Check availability live, see the URL shape instantly, and continue to the page you were originally trying to reach."
+      footer={<AuthLinkRow prompt="Need to sign in differently?" href="/sign-in" cta="Return to sign in" />}
+    >
+      <div className="space-y-4">
+        <AuthAlert>
+          Your profile URL will look like <span className="font-medium text-white">reposphere.app/{username || 'your_name'}</span>.
+        </AuthAlert>
 
-          <h1 className="text-3xl font-bold text-white mb-2">Choose your username</h1>
-          <p className="text-gray-400 mb-8">
-            This will be your unique identifier on RepoSphere. You can change it later in settings.
-          </p>
-
-          <form onSubmit={handleSumbit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
-              <div className="relative">
-                <Input
-                  value={username}
-                  onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="johndoe"
-                  className="bg-black/50 border-white/10 text-white h-12 pl-4 pr-12 focus:ring-blue-500/20"
-                  disabled={setUsernameMutation.isPending}
-                  autoFocus
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  {isChecking ? (
-                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                  ) : username.length >= 3 ? (
-                    availability?.data?.available ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-400" />
-                    )
-                  ) : null}
-                </div>
-              </div>
-              <div className="text-xs ml-1 min-h-[1.25rem]">
-                {username.length > 0 && username.length < 3 && (
-                  <span className="text-red-400">At least 3 characters</span>
-                )}
-                {username.length >= 3 && !isChecking && !availability?.data?.available && (
-                  <span className="text-red-400">Username is already taken</span>
-                )}
-                {username.length >= 3 && !isChecking && availability?.data?.available && (
-                  <span className="text-green-400">Username is available</span>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2.5">
+            <Label htmlFor="username" className="text-sm font-medium text-slate-200">
+              Username
+            </Label>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
+                <AtSign className="size-4" />
+              </span>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => {
+                  setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                }}
+                placeholder="ada_builds"
+                className={cn(authInputClassName, 'pl-11 pr-12')}
+                disabled={setUsernameMutation.isPending}
+                autoFocus
+              />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                {isChecking ? (
+                  <Loader2 className="size-4 animate-spin text-slate-400" />
+                ) : username.length >= 3 ? (
+                  usernameAvailable ? (
+                    <CheckCircle2 className="size-4 text-emerald-300" />
+                  ) : (
+                    <XCircle className="size-4 text-rose-300" />
+                  )
+                ) : (
+                  <UserRound className="size-4 text-slate-500" />
                 )}
               </div>
             </div>
-
-            <Button
-              type="submit"
-              disabled={!availability?.data?.available || setUsernameMutation.isPending || username.length < 3}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white h-12 rounded-xl font-semibold text-lg transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] disabled:opacity-50"
+            <p
+              className={cn(
+                'text-xs leading-5',
+                usernameAvailable ? 'text-emerald-300' : usernameTaken || usernameTooShort ? 'text-rose-300' : 'text-slate-500'
+              )}
             >
-              {setUsernameMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              ) : null}
-              Complete Setup
-            </Button>
-          </form>
-        </div>
+              {availabilityMessage}
+            </p>
+          </div>
+
+          {submitError ? <AuthAlert tone="danger">{submitError}</AuthAlert> : null}
+
+          <AuthActionButton
+            type="submit"
+            loading={setUsernameMutation.isPending}
+            loadingLabel="Saving your username..."
+            disabled={!availability?.data?.available || username.length < 3}
+          >
+            Complete setup
+          </AuthActionButton>
+        </form>
       </div>
-    </div>
+    </AuthShell>
   )
 }

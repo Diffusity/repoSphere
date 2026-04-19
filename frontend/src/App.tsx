@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
@@ -20,15 +20,30 @@ import { TerminalAuthPage } from '@/pages/TerminalAuthPage'
 import { SetupUsernamePage } from '@/pages/SetupUsernamePage'
 import { VerifyEmailPage } from '@/pages/VerifyEmailPage'
 import { useKeepAlive } from '@/hooks/useKeepAlive'
+import { takePostLoginRedirect } from '@/lib/authRedirect'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function App() {
   useKeepAlive()
   const initAuth = useAuthStore((s) => s.init)
+  const isLoaded = useAuthStore((s) => s.isLoaded)
+  const isSignedIn = useAuthStore((s) => s.isSignedIn)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     void initAuth()
   }, [initAuth])
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return
+    if (!['/dashboard', '/setup-username'].includes(location.pathname)) return
+
+    const storedRedirect = takePostLoginRedirect()
+    if (storedRedirect && storedRedirect !== location.pathname + location.search) {
+      navigate(storedRedirect, { replace: true })
+    }
+  }, [isLoaded, isSignedIn, location.pathname, location.search, navigate])
 
   return (
     <Routes>
