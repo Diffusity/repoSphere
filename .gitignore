@@ -20,3 +20,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 demo/
+graphify-env/
+graphify-out/
+.agent/
+cli/rs.exe
+cli/dist/
