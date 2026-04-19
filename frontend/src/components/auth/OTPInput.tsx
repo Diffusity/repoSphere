@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 interface OTPInputProps {
   length?: number
@@ -6,9 +7,19 @@ interface OTPInputProps {
   onChange: (value: string) => void
   onComplete?: (value: string) => void
   disabled?: boolean
+  className?: string
+  autoFocus?: boolean
 }
 
-export function OTPInput({ length = 6, value, onChange, onComplete, disabled = false }: OTPInputProps) {
+export function OTPInput({
+  length = 6,
+  value,
+  onChange,
+  onComplete,
+  disabled = false,
+  className,
+  autoFocus = false,
+}: OTPInputProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const inputsRef = useRef<Array<HTMLInputElement | null>>([])
 
@@ -26,6 +37,12 @@ export function OTPInput({ length = 6, value, onChange, onComplete, disabled = f
     }
   }, [length, onComplete, value])
 
+  useEffect(() => {
+    if (!autoFocus || disabled) return
+    const firstEmpty = Math.min(value.length, length - 1)
+    inputsRef.current[firstEmpty]?.focus()
+  }, [autoFocus, disabled, length, value.length])
+
   const focusAt = (index: number) => {
     const bounded = Math.max(0, Math.min(length - 1, index))
     setActiveIndex(bounded)
@@ -40,22 +57,27 @@ export function OTPInput({ length = 6, value, onChange, onComplete, disabled = f
   }
 
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className={cn('flex items-center justify-center gap-2 sm:gap-3', className)}>
       {digits.map((digit, index) => (
         <input
           key={index}
           ref={(el) => {
             inputsRef.current[index] = el
           }}
-          className={`h-11 w-10 rounded-md border bg-rs-bg text-center text-lg font-semibold outline-none transition ${
-            activeIndex === index ? 'border-rs-link ring-1 ring-rs-link/40' : 'border-rs-border'
-          }`}
+          className={cn(
+            'h-12 w-11 rounded-2xl border bg-white/[0.04] text-center text-lg font-semibold text-white outline-none transition shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:h-14 sm:w-12',
+            activeIndex === index
+              ? 'border-sky-300/70 ring-4 ring-sky-400/10'
+              : 'border-white/10 hover:border-slate-500/40',
+            disabled ? 'cursor-not-allowed opacity-60' : ''
+          )}
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete={index === 0 ? 'one-time-code' : 'off'}
           maxLength={1}
           value={digit}
           disabled={disabled}
+          autoFocus={autoFocus && index === 0}
           onFocus={() => setActiveIndex(index)}
           onChange={(e) => {
             const char = e.target.value.replace(/\D/g, '').slice(-1)

@@ -1,10 +1,11 @@
+import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resendVerificationOtp, verifyEmailOtp } from '@/api/auth'
 import { useApiClient } from '@/api/client'
+import { AuthActionButton, AuthAlert, AuthLinkRow, AuthShell } from '@/components/auth/AuthShell'
 import { OTPInput } from '@/components/auth/OTPInput'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/authStore'
 
 export function VerifyEmailPage() {
@@ -27,6 +28,11 @@ export function VerifyEmailPage() {
   }, [cooldown])
 
   const submitVerification = async () => {
+    if (!email) {
+      setError('Missing email context for verification.')
+      return
+    }
+
     setError(null)
     setLoading(true)
     try {
@@ -50,54 +56,104 @@ export function VerifyEmailPage() {
   }
 
   const onResend = async () => {
+    if (!email) return
     setResending(true)
+    setError(null)
     try {
       await resendVerificationOtp(client, email)
       setCooldown(60)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend the code')
     } finally {
       setResending(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-rs-bg px-4 py-12">
-      <Card className="w-full max-w-md border-rs-border bg-rs-surface">
-        <CardHeader>
-          <CardTitle>Verify your email</CardTitle>
-          <CardDescription>Enter the 6-digit code sent to {email || 'your email'}.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-3" onSubmit={onVerify}>
-            <OTPInput
-              value={otp}
-              onChange={setOtp}
-              onComplete={() => {
-                if (!loading) {
-                  void submitVerification()
-                }
-              }}
-              disabled={loading}
-            />
-            {error ? <p className="text-sm text-rs-danger">{error}</p> : null}
-            <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
-              {loading ? 'Verifying...' : 'Verify'}
-            </Button>
+    <AuthShell
+      badge="Step 2 of 3"
+      title="Verify your email"
+      description="Enter the 6-digit code from your inbox to continue."
+      backHref="/sign-up"
+      backLabel="Back to sign up"
+      panelTitle="A guided verification step, not a dead end."
+      panelDescription="Verification should feel fast and legible. The flow keeps the destination clear, the resend state visible, and the next step obvious once the code lands."
+      headerSlot={
+        email ? (
+          <AuthAlert>
+            We sent a code to <span className="font-medium text-white">{email}</span>.
+          </AuthAlert>
+        ) : (
+          <AuthAlert tone="danger">
+            We could not determine which email to verify. Start from sign up or sign in again.
+          </AuthAlert>
+        )
+      }
+      footer={<AuthLinkRow prompt="Already verified?" href="/sign-in" cta="Return to sign in" />}
+    >
+      {email ? (
+        <div className="space-y-4">
+          <form className="space-y-4" onSubmit={onVerify}>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-slate-200">Verification code</label>
+                <span className="text-xs uppercase tracking-[0.22em] text-slate-500">6 digits</span>
+              </div>
+              <OTPInput
+                value={otp}
+                onChange={setOtp}
+                onComplete={() => {
+                  if (!loading) {
+                    void submitVerification()
+                  }
+                }}
+                disabled={loading}
+                autoFocus
+              />
+            </div>
+
+            {error ? <AuthAlert tone="danger">{error}</AuthAlert> : null}
+
+            <AuthActionButton type="submit" loading={loading} loadingLabel="Verifying your account..." disabled={otp.length !== 6}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+              Verify email
+            </AuthActionButton>
           </form>
+
           <Button
+            type="button"
             variant="outline"
-            className="w-full"
+            className="h-12 w-full rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
             onClick={() => void onResend()}
-            disabled={resending || cooldown > 0 || !email}
+            disabled={resending || cooldown > 0}
           >
-            {resending ? 'Resending...' : cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+            {resending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            {resending ? 'Sending another code...' : cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend code'}
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            <Link to="/sign-in" className="text-rs-link hover:underline">
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <AuthAlert tone="danger">Start from sign up or sign in again so we know where to send your verification step.</AuthAlert>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AuthActionButton type="button" onClick={() => navigate('/sign-up')}>
+              Create account
+            </AuthActionButton>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+              onClick={() => navigate('/sign-in')}
+            >
+              Sign in instead
+            </Button>
+          </div>
+          <div className="flex justify-center">
+            <Link to="/sign-in" className="text-sm font-medium text-slate-300 transition hover:text-white">
               Back to sign in
             </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </div>
+      )}
+    </AuthShell>
   )
 }

@@ -77,9 +77,6 @@ export function LandingPage() {
                   <Link to="/dashboard">Open dashboard</Link>
                 </Button>
               )}
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/explore">View demo</Link>
-              </Button>
             </div>
           </div>
           <TerminalBlock
@@ -117,9 +114,6 @@ export function LandingPage() {
             <Code2 className="size-4" />
             GitHub
           </a>
-          <Link to="/explore" className="text-rs-link hover:underline">
-            Docs (soon)
-          </Link>
         </div>
       </footer>
     </div>

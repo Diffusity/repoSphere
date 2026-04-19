@@ -23,7 +23,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<LoginResult>
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; email: string }>
   logout: () => Promise<void>
-  loginWithGoogle: () => void
+  loginWithGoogle: (redirectTo?: string) => void
 }
 
 function extractUser(data: AuthUserResponse): User | null {
@@ -83,7 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, isSignedIn: false })
   },
 
-  loginWithGoogle: () => {
+  loginWithGoogle: (redirectTo?: string) => {
+    void redirectTo
     const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:6020'
     window.location.href = `${baseURL}/api/v1/auth/google`
   },
