@@ -25,3 +25,16 @@ graphify-out/
 .agent/
 cli/rs.exe
 cli/dist/
+
+# Test files
+tests/
+test/
+__tests__/
+*.test.*
+*.spec.*
+test_*.py
+*_test.py
+*_test.go
+jest.config.*
+jest.setup.*
+__mocks__/
