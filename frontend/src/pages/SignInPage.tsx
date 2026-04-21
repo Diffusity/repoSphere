@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -56,7 +57,18 @@ export function SignInPage() {
       }
       setError('Unable to sign in right now.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in')
+      if (isAxiosError(err)) {
+        const status = err.response?.status
+        if (status && status >= 400 && status < 500) {
+          setError('Incorrect email or password')
+        } else if (status && status >= 500) {
+          setError('Server error')
+        } else {
+          setError('Failed to sign in')
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to sign in')
+      }
     } finally {
       setIsSubmitting(false)
     }
