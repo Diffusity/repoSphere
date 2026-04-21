@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { 
-  Loader2, 
-  Trash2, 
+import {
+  Loader2,
+  Trash2,
   AlertTriangle,
   ChevronLeft,
   Settings as SettingsIcon,
@@ -10,17 +10,16 @@ import {
   Info
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
@@ -29,10 +28,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { 
-  useRepository, 
-  useUpdateRepository, 
-  useConfirmDeleteRepository 
+import {
+  useRepository,
+  useUpdateRepository,
+  useConfirmDeleteRepository
 } from '@/hooks/useRepository'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -40,7 +39,7 @@ export function RepoSettingsPage() {
   const { username = '', repoName = '' } = useParams()
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.user)
-  
+
   // Fetch repository data
   const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
   const repo = repoRes?.success ? repoRes.data : null
@@ -54,7 +53,7 @@ export function RepoSettingsPage() {
   const [description, setDescription] = useState('')
   const [visibility, setVisibility] = useState<'public' | 'private'>('public')
   const [defaultBranch, setDefaultBranch] = useState('master')
-  
+
   // State for deletion dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [confirmName, setConfirmName] = useState('')
@@ -104,7 +103,7 @@ export function RepoSettingsPage() {
           default_branch: defaultBranch
         }
       })
-      
+
       if (res.success) {
         toast.success('Repository updated successfully')
         if (name !== repo.name) {
@@ -118,14 +117,14 @@ export function RepoSettingsPage() {
 
   const handleDelete = async () => {
     if (confirmName !== repo.name) return
-    
+
     try {
       const res = await deleteMutation.mutateAsync({
         owner: username,
         name: repoName,
         confirmationName: confirmName
       })
-      
+
       if (res.success) {
         toast.success('Repository deleted successfully')
         navigate('/repositories')
@@ -163,27 +162,27 @@ export function RepoSettingsPage() {
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="repo-name">Repository Name</Label>
-                  <Input 
-                    id="repo-name" 
-                    value={name} 
+                  <Input
+                    id="repo-name"
+                    value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="bg-black/20 border-rs-border focus:ring-rs-link"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="default-branch">Default Branch</Label>
-                  <Input 
-                    id="default-branch" 
-                    value={defaultBranch} 
+                  <Input
+                    id="default-branch"
+                    value={defaultBranch}
                     onChange={(e) => setDefaultBranch(e.target.value)}
                     className="bg-black/20 border-rs-border focus:ring-rs-link"
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="repo-desc">Description</Label>
-                  <Input 
-                    id="repo-desc" 
-                    value={description} 
+                  <Input
+                    id="repo-desc"
+                    value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Short description of your project"
                     className="bg-black/20 border-rs-border focus:ring-rs-link"
@@ -195,10 +194,10 @@ export function RepoSettingsPage() {
                 <Label>Visibility</Label>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex cursor-pointer items-center gap-2 rounded-md border border-rs-border bg-black/20 px-4 py-3 hover:bg-black/30 transition-colors">
-                    <input 
-                      type="radio" 
-                      name="visibility" 
-                      checked={visibility === 'public'} 
+                    <input
+                      type="radio"
+                      name="visibility"
+                      checked={visibility === 'public'}
                       onChange={() => setVisibility('public')}
                       className="size-4 text-rs-link"
                     />
@@ -208,10 +207,10 @@ export function RepoSettingsPage() {
                     </div>
                   </label>
                   <label className="flex cursor-pointer items-center gap-2 rounded-md border border-rs-border bg-black/20 px-4 py-3 hover:bg-black/30 transition-colors">
-                    <input 
-                      type="radio" 
-                      name="visibility" 
-                      checked={visibility === 'private'} 
+                    <input
+                      type="radio"
+                      name="visibility"
+                      checked={visibility === 'private'}
                       onChange={() => setVisibility('private')}
                       className="size-4 text-rs-link"
                     />
@@ -224,7 +223,7 @@ export function RepoSettingsPage() {
               </div>
 
               <div className="flex justify-end border-t border-rs-border pt-6">
-                <Button 
+                <Button
                   type="submit"
                   disabled={updateMutation.isPending}
                   className="bg-rs-link hover:bg-rs-link/90 text-white"
@@ -251,8 +250,8 @@ export function RepoSettingsPage() {
                 <p className="font-semibold text-white">Change repository visibility</p>
                 <p className="text-sm text-muted-foreground">This repository is currently {repo.visibility}.</p>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="border-rs-border hover:bg-rs-elevated"
                 onClick={() => setVisibility(visibility === 'public' ? 'private' : 'public')}
               >
@@ -265,8 +264,8 @@ export function RepoSettingsPage() {
                 <p className="font-semibold text-white">Delete this repository</p>
                 <p className="text-sm text-muted-foreground">Once you delete a repository, there is no going back. Please be certain.</p>
               </div>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 className="bg-red-600 hover:bg-red-700"
                 onClick={() => setIsDeleteDialogOpen(true)}
               >
@@ -286,12 +285,12 @@ export function RepoSettingsPage() {
               Are you absolutely sure?
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-2">
-              This action <strong>cannot</strong> be undone. This will permanently delete the 
-              <span className="text-white font-semibold"> {username}/{repoName} </span> 
+              This action <strong>cannot</strong> be undone. This will permanently delete the
+              <span className="text-white font-semibold"> {username}/{repoName} </span>
               repository and all associated commits, branches, and files.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="rounded-md bg-red-950/20 p-3 border border-red-900/30">
               <p className="text-xs text-red-400">
@@ -312,15 +311,15 @@ export function RepoSettingsPage() {
           </div>
 
           <DialogFooter className="sm:justify-between gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               className="border-rs-border"
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={confirmName !== repoName || deleteMutation.isPending}
               className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
