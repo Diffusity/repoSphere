@@ -127,3 +127,34 @@ export async function deleteRepository(client: AxiosInstance, owner: string, nam
   const { data } = await client.delete<ApiResponse<void>>(`/api/v1/repo/${owner}/${name}`)
   return data
 }
+
+export async function updateRepository(
+  client: AxiosInstance,
+  owner: string,
+  name: string,
+  payload: {
+    name?: string
+    description?: string
+    visibility?: 'public' | 'private'
+    default_branch?: string
+  }
+) {
+  const { data } = await client.patch<ApiResponse<Repository>>(
+    `/api/v1/repo/${owner}/${name}`,
+    payload
+  )
+  return data
+}
+
+export async function confirmDeleteRepository(
+  client: AxiosInstance,
+  owner: string,
+  name: string,
+  confirmationName: string
+) {
+  const { data } = await client.post<ApiResponse<void>>(
+    `/api/v1/repo/${owner}/${name}/confirm-delete`,
+    { confirmation_name: confirmationName }
+  )
+  return data
+}

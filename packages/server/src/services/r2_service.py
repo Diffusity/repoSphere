@@ -81,3 +81,28 @@ async def generate_presigned_url(hash: str, expiration: int = 3600) -> str:
         )
     )
     return url
+
+async def delete_blobs(hashes: list[str]) -> bool:
+    """Delete multiple blobs from R2."""
+    if not hashes:
+        return True
+        
+    loop = asyncio.get_running_loop()
+    objects = [{"Key": f"objects/{h[:2]}/{h[2:]}"} for h in hashes]
+    
+    # S3 delete_objects can delete up to 1000 at a time
+    for i in range(0, len(objects), 1000):
+        batch = objects[i:i+1000]
+        try:
+            await loop.run_in_executor(
+                None,
+                lambda b=batch: s3_client.delete_objects(
+                    Bucket=R2_BUCKET_NAME,
+                    Delete={"Objects": b}
+                )
+            )
+        except Exception as e:
+            print(f"Error deleting blobs from R2: {e}")
+            return False
+            
+    return True

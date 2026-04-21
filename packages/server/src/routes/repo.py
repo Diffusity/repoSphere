@@ -142,6 +142,39 @@ async def delete_repository(
     return await repo_controller.delete_repository(owner, name, current_user, db)
 
 
+@router.patch("/{owner}/{name}")
+async def update_repository(
+    owner: str,
+    name: str,
+    payload: dict,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.update_repository(
+        owner,
+        name,
+        payload.get("name"),
+        payload.get("description"),
+        payload.get("visibility"),
+        payload.get("default_branch"),
+        current_user,
+        db,
+    )
+
+
+@router.post("/{owner}/{name}/confirm-delete")
+async def confirm_delete_repository(
+    owner: str,
+    name: str,
+    payload: dict,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.confirm_delete_repository(
+        owner, name, payload.get("confirmation_name"), current_user, db
+    )
+
+
 @router.get("/{owner}/{name}/branch/{branch}/head")
 async def get_head_commit(
     owner: str,

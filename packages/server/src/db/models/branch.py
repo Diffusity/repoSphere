@@ -30,5 +30,5 @@ class Branch(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    repository = relationship("Repository", lazy="selectin")
+    repository = relationship("Repository", back_populates="branches", lazy="selectin")
     head_commit = relationship("Commit", lazy="selectin", foreign_keys=[head_commit_id])

@@ -151,6 +151,11 @@ function CommitListItem({
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:pl-2">
+          <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent" asChild title="Browse files at this commit">
+            <Link to={`/${username}/${repoName}/tree/${c.hash}`}>
+              Browse files
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="font-mono text-xs border-rs-border h-8" asChild>
             <Link to={`/${username}/${repoName}/commit/${c.hash}`}>
               {c.hash.slice(0, 7)}

@@ -27,4 +27,4 @@ class Commit(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
-    repository = relationship("Repository", lazy="selectin")
+    repository = relationship("Repository", back_populates="commits", lazy="selectin")

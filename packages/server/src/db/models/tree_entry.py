@@ -21,4 +21,4 @@ class TreeEntry(Base):
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     blob_hash: Mapped[str] = mapped_column(String, nullable=False)
 
-    repository = relationship("Repository", lazy="selectin")
+    repository = relationship("Repository", back_populates="tree_entries", lazy="selectin")

@@ -14,7 +14,7 @@ from src.db.models.branch import Branch
 from src.db.models.commit import Commit
 from src.db.models.tree_entry import TreeEntry
 from src.db.models.blob import Blob
-from src.services import r2_service
+from src.services import r2_service, diff_service
 
 
 async def create_repository(
@@ -558,9 +558,11 @@ async def get_commit_diff(
     if not commit:
         raise HTTPException(status_code=404, detail="Commit not found")
 
+    repo_id = commit.repo_id
+
     # 2. Get Tree Entries for this commit
     current_entries_res = await db.execute(
-        select(TreeEntry).where(TreeEntry.tree_hash == commit.tree_hash)
+        select(TreeEntry).where(TreeEntry.tree_hash == commit.tree_hash, TreeEntry.repo_id == repo_id)
     )
     current_entries = {e.file_path: e.blob_hash for e in current_entries_res.scalars().all()}
 
@@ -568,31 +570,142 @@ async def get_commit_diff(
     parent_entries = {}
     if commit.parent_hash:
         parent_commit_res = await db.execute(
-            select(Commit).where(Commit.repo_id == commit.repo_id, Commit.hash == commit.parent_hash)
+            select(Commit).where(Commit.repo_id == repo_id, Commit.hash == commit.parent_hash)
         )
         parent_commit = parent_commit_res.scalar_one_or_none()
         if parent_commit:
             p_entries_res = await db.execute(
-                select(TreeEntry).where(TreeEntry.tree_hash == parent_commit.tree_hash)
+                select(TreeEntry).where(TreeEntry.tree_hash == parent_commit.tree_hash, TreeEntry.repo_id == repo_id)
             )
             parent_entries = {e.file_path: e.blob_hash for e in p_entries_res.scalars().all()}
 
-    # 4. Compare trees to build diff (simple summary for now)
-    diffs = []
+    # 4. Compare trees and compute actual diffs
+    diff_results = []
     
+    # Helper to fetch and decompress blob text
+    async def get_text(blob_hash: str | None) -> str | None:
+        if not blob_hash:
+            return None
+        try:
+            content = await r2_service.download_blob(blob_hash)
+            import zlib
+            try:
+                content = zlib.decompress(content)
+            except zlib.error:
+                pass
+            return content.decode("utf-8")
+        except Exception:
+            return None # Binary or error
+
     # Files added or modified
     for path, blob_hash in current_entries.items():
         if path not in parent_entries:
-            diffs.append({"path": path, "type": "added", "hash": blob_hash})
+            # Added
+            new_text = await get_text(blob_hash)
+            diff_results.append(diff_service.compute_diff(None, new_text, path, "added"))
         elif parent_entries[path] != blob_hash:
-            diffs.append({"path": path, "type": "modified", "hash": blob_hash, "old_hash": parent_entries[path]})
+            # Modified
+            old_text = await get_text(parent_entries[path])
+            new_text = await get_text(blob_hash)
+            diff_results.append(diff_service.compute_diff(old_text, new_text, path, "modified"))
 
     # Files deleted
-    for path in parent_entries:
+    for path, old_blob_hash in parent_entries.items():
         if path not in current_entries:
-            diffs.append({"path": path, "type": "deleted", "old_hash": parent_entries[path]})
+            # Deleted
+            old_text = await get_text(old_blob_hash)
+            diff_results.append(diff_service.compute_diff(old_text, None, path, "deleted"))
 
-    return {"success": True, "data": diffs}
+    return {"success": True, "data": diff_results}
+
+
+async def update_repository(
+    owner_username: str,
+    repo_name: str,
+    name: str | None,
+    description: str | None,
+    visibility: str | None,
+    default_branch: str | None,
+    current_user: User,
+    db: AsyncSession,
+):
+    """PATCH /api/v1/repo/{owner}/{name} — Update repository info."""
+    result = await db.execute(
+        select(Repository)
+        .join(User)
+        .where(User.username == owner_username, Repository.name == repo_name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    if repo.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if name is not None and name != repo.name:
+        # Check uniqueness
+        dup_check = await db.execute(
+            select(Repository).where(Repository.owner_id == current_user.id, Repository.name == name)
+        )
+        if dup_check.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Repository with this name already exists")
+        repo.name = name
+
+    if description is not None:
+        repo.description = description
+    if visibility is not None:
+        repo.visibility = visibility
+    if default_branch is not None:
+        repo.default_branch = default_branch
+
+    repo.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(repo)
+
+    return {
+        "success": True,
+        "message": "Repository updated successfully",
+        "data": repo.to_dict(),
+    }
+
+
+async def confirm_delete_repository(
+    owner_username: str,
+    repo_name: str,
+    confirmation_name: str,
+    current_user: User,
+    db: AsyncSession,
+):
+    """POST /api/v1/repo/{owner}/{name}/confirm-delete — Double-confirm delete."""
+    result = await db.execute(
+        select(Repository)
+        .join(User)
+        .where(User.username == owner_username, Repository.name == repo_name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    if repo.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if confirmation_name != repo.name:
+        raise HTTPException(status_code=400, detail="Confirmation name does not match")
+
+    # 1. Gather all blobs to delete from R2
+    blobs_result = await db.execute(select(Blob.hash).where(Blob.repo_id == repo.id))
+    blob_hashes = list(blobs_result.scalars().all())
+
+    # 2. Cleanup R2
+    if blob_hashes:
+        await r2_service.delete_blobs(blob_hashes)
+
+    # 3. DB Deletion (cascades should handle branches, commits, etc. if configured, 
+    # but let's be safe and rely on the repo deletion if the model has cascades)
+    await db.delete(repo)
+    await db.commit()
+
+    return {"success": True, "message": "Repository and all associated data deleted"}
 
 
 async def delete_repository(

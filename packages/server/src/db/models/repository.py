@@ -34,6 +34,10 @@ class Repository(Base):
     )
 
     owner = relationship("User", lazy="selectin")
+    branches = relationship("Branch", back_populates="repository", cascade="all, delete-orphan")
+    commits = relationship("Commit", back_populates="repository", cascade="all, delete-orphan")
+    tree_entries = relationship("TreeEntry", back_populates="repository", cascade="all, delete-orphan")
+    blobs = relationship("Blob", back_populates="repository", cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
         return {

@@ -56,8 +56,10 @@ export function CommitDetailPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent">
-                Browse files
+              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent" asChild>
+                <Link to={`/${username}/${repoName}/tree/${commit.hash}`}>
+                  Browse files
+                </Link>
               </Button>
               <CommitHash hash={commit.hash} />
             </div>

@@ -8,8 +8,11 @@ import {
   fetchCommitDetail, 
   fetchCommitDiff,
   fetchUserActivity,
-  fetchUserStats
+  fetchUserStats,
+  updateRepository,
+  confirmDeleteRepository
 } from '@/api/repo'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 export function useRepository(owner: string, name: string) {
   const client = useApiClient()
@@ -88,5 +91,46 @@ export function useUserStats(username: string) {
     queryKey: ['user-stats', username],
     queryFn: () => fetchUserStats(client, username),
     enabled: !!username,
+  })
+}
+
+export function useUpdateRepository() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ 
+      owner, 
+      name, 
+      payload 
+    }: { 
+      owner: string; 
+      name: string; 
+      payload: any 
+    }) => updateRepository(client, owner, name, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['repository', variables.owner, variables.name] })
+      // If name changed, we might need to invalidate more, but the redirect will handle it usually
+    },
+  })
+}
+
+export function useConfirmDeleteRepository() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ 
+      owner, 
+      name, 
+      confirmationName 
+    }: { 
+      owner: string; 
+      name: string; 
+      confirmationName: string 
+    }) => confirmDeleteRepository(client, owner, name, confirmationName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] })
+    },
   })
 }

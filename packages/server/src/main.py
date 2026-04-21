@@ -1,8 +1,9 @@
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from src.config.config import CORS_ORIGINS, PORT
 from src.db.database import init_db
@@ -23,6 +24,17 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch unhandled exceptions and return a proper JSONResponse so that
+    CORSMiddleware can attach the required CORS headers to the response."""
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "detail": "Internal server error"},
+    )
 
 # --- CORS ---
 app.add_middleware(

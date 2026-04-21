@@ -37,6 +37,7 @@ import {
   useBlobContent, 
   useCommits 
 } from '@/hooks/useRepository'
+import { useAuthStore } from '@/stores/authStore'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -49,6 +50,9 @@ export function RepositoryPage() {
   const routeKind = location.pathname.includes('/blob/') ? 'blob' : 'tree'
   const branch = branchFromRoute ?? RS_BRANCH_DEFAULT
   const treePathInRepo = isObjectRoute ? normalizeTreeSplat(treeSplat) : ''
+
+  const currentUser = useAuthStore((s) => s.user)
+  const isOwner = currentUser?.username === username
 
   // Data Fetching
   const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
@@ -158,8 +162,9 @@ export function RepositoryPage() {
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem active icon={Code} label="Code" />
         <TabItem icon={GitCommit} label="Commits" to={`/${username}/${repoName}/commits`} asLink />
-        <TabItem icon={Book} label="Issues" disabled />
-        <TabItem icon={Settings} label="Settings" disabled />
+        {isOwner && (
+          <TabItem icon={Settings} label="Settings" to={`/${username}/${repoName}/settings`} asLink />
+        )}
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_296px]">
