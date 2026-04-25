@@ -52,16 +52,20 @@ func Push(remote string, branchName string) {
 	var commitsToPush []types.Commit
 	foundRemoteHead := !exists || (remoteHeadHash == "")
 
-	for i := len(localCommits) - 1; i >= 0; i-- {
+	for i := 0; i < len(localCommits); i++ {
 		commit := localCommits[i]
 		if !foundRemoteHead {
 			if commit.Hash == remoteHeadHash {
 				foundRemoteHead = true
-				continue
 			}
 			continue
 		}
 		commitsToPush = append(commitsToPush, commit)
+	}
+
+	if !foundRemoteHead {
+		fmt.Println("Error: remote branch contains commits not present locally. Please pull first.")
+		return
 	}
 
 	if len(commitsToPush) == 0 {

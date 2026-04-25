@@ -22,7 +22,15 @@ type CreateSessionApiBody struct {
 
 func CreateSessionApi() (*CreateSessionApiBodyData, error) {
 	url := utils.BACKEND_URL + "/api/v1/auth/session"
-	resp, err := http.Post(url, "application/json", nil)
+
+	resp, err := retryDo(func() (*http.Request, error) {
+		req, err := http.NewRequest("POST", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		return req, nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +73,10 @@ type CheckSessionApiBody struct {
 
 func CheckSessionApi(sessionId string) (*CheckSessionApiBodyData, error) {
 	url := fmt.Sprintf(utils.BACKEND_URL+"/api/v1/auth/session/%s", sessionId)
-	resp, err := http.Get(url)
+
+	resp, err := retryDo(func() (*http.Request, error) {
+		return http.NewRequest("GET", url, nil)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -95,14 +106,15 @@ func CheckSessionApi(sessionId string) (*CheckSessionApiBodyData, error) {
 
 func LogoutApi(token string) error {
 	url := utils.BACKEND_URL + "/api/v1/auth/logout"
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		return err
-	}
 
-	req.Header.Set("Authorization", "Terminal "+token)
-	resp, err := client.Do(req)
+	resp, err := retryDo(func() (*http.Request, error) {
+		req, err := http.NewRequest("POST", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Terminal "+token)
+		return req, nil
+	})
 	if err != nil {
 		return err
 	}

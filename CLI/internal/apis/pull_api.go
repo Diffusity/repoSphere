@@ -16,19 +16,19 @@ func PullFromRemote(owner, name, localHead string) (*types.PullData, error) {
 		url += "?local_head=" + localHead
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	// Read token if it exists for optional authentication (e.g. for private repos)
 	session := utils.GetSession()
-	if session.Token != "" {
-		req.Header.Set("Authorization", "Terminal "+session.Token)
-	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := retryDo(func() (*http.Request, error) {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		if session.Token != "" {
+			req.Header.Set("Authorization", "Terminal "+session.Token)
+		}
+		return req, nil
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -15,12 +15,14 @@ func GetHeadCommitHash(owner, name, branchName string) (bool, string, error) {
 
 	token := utils.GetSession().Token
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, "", err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Terminal %s", token))
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := retryDo(func() (*http.Request, error) {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Terminal %s", token))
+		return req, nil
+	})
 	if err != nil {
 		return false, "", err
 	}
