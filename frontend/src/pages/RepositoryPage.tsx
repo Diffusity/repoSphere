@@ -18,6 +18,7 @@ import {
 import { Fragment, useMemo } from 'react'
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { RepositoryEntries } from '@/components/common/RepositoryEntries'
+import { MarkdownRenderer } from '@/components/common/MarkdownRenderer'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -86,6 +87,28 @@ export function RepositoryPage() {
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
   const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab
+
+  const readmeEntry = useMemo(() => {
+    if (!tree || routeKind !== 'tree' || treePathInRepo !== '') return null
+    // Case-insensitive match for readme.md
+    return tree.find(e => e.name.toLowerCase() === 'readme.md' && e.type === 'file')
+  }, [tree, routeKind, treePathInRepo])
+
+  const { data: readmeRes } = useBlobContent(
+    username, 
+    repoName, 
+    branch, 
+    readmeEntry ? `${treePathInRepo ? treePathInRepo + '/' : ''}${readmeEntry.name}` : ''
+  )
+
+  const readmeContent = useMemo(() => {
+    if (!readmeRes?.success || !readmeRes.data) return null
+    const b = readmeRes.data
+    if (b.encoding === 'base64') {
+      try { return atob(b.content) } catch { return null }
+    }
+    return b.content
+  }, [readmeRes])
 
   const decodedContent = useMemo(() => {
     if (!blob) return ''
@@ -504,7 +527,13 @@ export function RepositoryPage() {
                     <span className="text-sm font-semibold text-white">README.md</span>
                   </div>
                   <div className="bg-rs-surface px-6 py-6">
-                    <ReadmeMarkdown source={repo.description || '# README\n\n_No description for this repository._'} />
+                    {readmeContent ? (
+                      <MarkdownRenderer content={readmeContent} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        {repo.description || 'No README found in this repository.'}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -643,72 +672,5 @@ function TabItem({
     <span className={className} aria-current={active ? 'page' : undefined}>
       {inner}
     </span>
-  )
-}
-
-function ReadmeMarkdown({ source }: { source: string }) {
-  const blocks = source.split('```')
-
-  return (
-    <article className="max-w-none text-muted-foreground">
-      <div className="space-y-4">
-        {blocks.map((block, i) => {
-          if (i % 2 === 1) {
-            return (
-              <pre key={i} className="overflow-x-auto rounded-md border border-rs-border bg-rs-bg/70 p-4 font-mono text-xs text-foreground">
-                {block.replace(/^\w*\n/, '')}
-              </pre>
-            )
-          }
-
-          return (
-            <div key={i} className="space-y-3 whitespace-pre-wrap">
-              {block.split('\n').map((line, li) => {
-                if (line.startsWith('# ')) {
-                  return (
-                    <h2 key={li} className="text-3xl font-semibold text-foreground">
-                      {line.slice(2)}
-                    </h2>
-                  )
-                }
-
-                if (line.startsWith('## ')) {
-                  return (
-                    <h3 key={li} className="text-xl font-semibold text-foreground">
-                      {line.slice(3)}
-                    </h3>
-                  )
-                }
-
-                const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-                return (
-                  <p key={li} className="text-sm leading-relaxed">
-                    {parts.map((p, pi) => {
-                      if (p.startsWith('**') && p.endsWith('**')) {
-                        return (
-                          <strong key={pi} className="text-foreground">
-                            {p.slice(2, -2)}
-                          </strong>
-                        )
-                      }
-
-                      if (p.startsWith('`') && p.endsWith('`')) {
-                        return (
-                          <code key={pi} className="rounded bg-rs-elevated px-1 py-0.5 font-mono text-xs text-foreground">
-                            {p.slice(1, -1)}
-                          </code>
-                        )
-                      }
-
-                      return <span key={pi}>{p}</span>
-                    })}
-                  </p>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
-    </article>
   )
 }
