@@ -68,6 +68,8 @@ export default function App() {
           <Route path="/:username/:repoName/settings" element={<RepoSettingsPage />} />
           <Route path="/:username/:repoName/blob/:branch/*" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/tree/:branch/*" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/issues" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/issues/*" element={<RepositoryPage />} />
           <Route path="/:username/:repoName" element={<RepositoryPage />} />
           <Route path="/:username" element={<ProfilePage />} />
         </Route>
