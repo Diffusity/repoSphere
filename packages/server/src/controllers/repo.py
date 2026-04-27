@@ -483,19 +483,38 @@ async def list_commits(
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
 
-    # 2. Get Commits
-    # In this simple implementation, we don't have a full DAG in SQL yet.
-    # We just fetch commits for this repo ordered by timestamp.
-    # TODO: Follow parent_hash chain for the specific branch.
-    stmt = (
-        select(Commit)
-        .where(Commit.repo_id == repo.id)
-        .order_by(Commit.timestamp.desc())
-        .offset((page - 1) * limit)
-        .limit(limit)
+    # 2. Get Branch
+    branch_result = await db.execute(
+        select(Branch).where(Branch.repo_id == repo.id, Branch.name == branch_name)
     )
-    commits_result = await db.execute(stmt)
-    commits = commits_result.scalars().all()
+    branch = branch_result.scalar_one_or_none()
+    if not branch or not branch.head_commit_id:
+        return {"success": True, "data": []}
+
+    # 3. Walk parent_hash chain
+    commits = []
+    current_commit_id = branch.head_commit_id
+    
+    while current_commit_id:
+        c_res = await db.execute(select(Commit).where(Commit.id == current_commit_id))
+        commit = c_res.scalar_one_or_none()
+        if not commit:
+            break
+            
+        commits.append(commit)
+        
+        if not commit.parent_hash:
+            break
+            
+        p_res = await db.execute(
+            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == commit.parent_hash)
+        )
+        current_commit_id = p_res.scalar_one_or_none()
+
+    # Apply pagination
+    start_idx = (page - 1) * limit
+    end_idx = start_idx + limit
+    paginated_commits = commits[start_idx:end_idx]
 
     return {
         "success": True,
@@ -506,7 +525,37 @@ async def list_commits(
                 "author": c.author,
                 "timestamp": c.timestamp.isoformat(),
             }
-            for c in commits
+            for c in paginated_commits
+        ],
+    }
+
+async def list_branches(
+    owner: str,
+    name: str,
+    db: AsyncSession,
+):
+    """GET /api/v1/repo/{owner}/{name}/branches — List all branches."""
+    result = await db.execute(
+        select(Repository).join(User).where(User.username == owner, Repository.name == name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    branches_result = await db.execute(
+        select(Branch).where(Branch.repo_id == repo.id).order_by(Branch.name)
+    )
+    branches = branches_result.scalars().all()
+    
+    return {
+        "success": True,
+        "data": [
+            {
+                "name": b.name,
+                "headCommitHash": b.head_commit.hash if b.head_commit else None,
+                "updatedAt": b.updated_at.isoformat(),
+            }
+            for b in branches
         ],
     }
 

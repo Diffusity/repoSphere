@@ -10,6 +10,12 @@ import type {
   DiffFile
 } from '@/types'
 
+export interface BranchInfo {
+  name: string
+  headCommitHash: string | null
+  updatedAt: string
+}
+
 export async function createRepository(
   client: AxiosInstance, 
   formData: FormData
@@ -84,6 +90,13 @@ export async function fetchRepositoryTree(
     ? `/api/v1/repo/${owner}/${name}/tree/${branch}/${path}`
     : `/api/v1/repo/${owner}/${name}/tree/${branch}`
   const { data } = await client.get<ApiResponse<TreeEntry[]>>(url)
+  return data
+}
+
+export async function fetchBranches(client: AxiosInstance, owner: string, name: string) {
+  const { data } = await client.get<ApiResponse<BranchInfo[]>>(
+    `/api/v1/repo/${owner}/${name}/branches`
+  )
   return data
 }
 

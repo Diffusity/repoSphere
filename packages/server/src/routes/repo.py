@@ -76,6 +76,15 @@ async def list_public_repositories(
     return await repo_controller.list_public_repositories(db, search, language)
 
 
+@router.get("/{owner}/{name}/branches")
+async def list_branches(
+    owner: str,
+    name: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.list_branches(owner, name, db)
+
+
 @router.get("/{owner}/{name}")
 async def get_repository(
     owner: str,
@@ -205,14 +214,3 @@ async def push(
     return await repo_controller.push(
         owner, name, metadata, files, current_user, db
     )
-
-
-@router.get("/{owner}/{name}/pull")
-async def pull(
-    owner: str,
-    name: str,
-    local_head: str | None = None,
-    current_user: User | None = Depends(optional_auth_middleware),
-    db: AsyncSession = Depends(get_db),
-):
-    return await repo_controller.pull(owner, name, local_head, current_user, db)
