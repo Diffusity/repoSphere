@@ -13,6 +13,7 @@ import {
   Settings,
   Star,
   Loader2,
+  CircleDot,
   type LucideIcon,
 } from 'lucide-react'
 import { Fragment, useMemo } from 'react'
@@ -45,9 +46,14 @@ import {
   useToggleStar,
   useForkRepository
 } from '@/hooks/useRepository'
+import { useIssues } from '@/hooks/useIssues'
 import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
 import { CommitList } from '@/components/repo/CommitList'
+import { IssuesList } from '@/components/repo/IssuesList'
+import { IssueDetail } from '@/components/repo/IssueDetail'
+import { NewIssueForm } from '@/components/repo/NewIssueForm'
+import { RepoSettings } from '@/components/repo/RepoSettings'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -86,7 +92,16 @@ export function RepositoryPage() {
 
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
-  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab
+  const isIssuesTab = location.pathname.includes('/issues')
+  const isSettingsTab = location.pathname.includes('/settings')
+  const isNewIssue = location.pathname.endsWith('/issues/new')
+  const issueMatch = location.pathname.match(/\/issues\/(\d+)/)
+  const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null
+
+  const { data: issuesCountRes } = useIssues(username, repoName, 'open', undefined, 1, 0)
+  const openIssueCount = issuesCountRes?.success ? issuesCountRes.data.openCount : 0
+
+  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab && !isSettingsTab
 
   const readmeEntry = useMemo(() => {
     if (!tree || routeKind !== 'tree' || treePathInRepo !== '') return null
@@ -296,7 +311,7 @@ export function RepositoryPage() {
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 
-          active={!isCommitsTab} 
+          active={!isCommitsTab && !isIssuesTab && !isSettingsTab} 
           icon={Code} 
           label="Code" 
           to={`/${username}/${repoName}/tree/${branch}`} 
@@ -309,15 +324,39 @@ export function RepositoryPage() {
           to={`/${username}/${repoName}/commits/${branch}`} 
           asLink 
         />
+        <TabItem
+          active={isIssuesTab}
+          icon={CircleDot}
+          label="Issues"
+          to={`/${username}/${repoName}/issues`}
+          asLink
+          count={openIssueCount}
+        />
         {isOwner && (
-          <TabItem icon={Settings} label="Settings" to={`/${username}/${repoName}/settings`} asLink />
+          <TabItem 
+            active={isSettingsTab}
+            icon={Settings} 
+            label="Settings" 
+            to={`/${username}/${repoName}/settings`} 
+            asLink 
+          />
         )}
       </nav>
 
-      <div className={cn("grid gap-8", !isCommitsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
+      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isSettingsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
+          ) : isIssuesTab ? (
+            isNewIssue ? (
+              <NewIssueForm username={username} repoName={repoName} />
+            ) : issueNumber ? (
+              <IssueDetail username={username} repoName={repoName} issueNumber={issueNumber} />
+            ) : (
+              <IssuesList username={username} repoName={repoName} />
+            )
+          ) : isSettingsTab ? (
+            <RepoSettings username={username} repoName={repoName} />
           ) : (
             <div className="surface-panel overflow-hidden">
               {isObjectRoute ? (
@@ -541,7 +580,7 @@ export function RepositoryPage() {
           )}
         </section>
 
-        {!isCommitsTab && (
+        {!isCommitsTab && !isIssuesTab && !isSettingsTab && (
           <aside className="space-y-6 text-sm">
             <section>
               <h2 className="mb-2 text-base font-semibold text-white">About</h2>
@@ -636,6 +675,7 @@ function TabItem({
   to,
   icon: Icon,
   label,
+  count,
 }: {
   active?: boolean
   disabled?: boolean
@@ -643,6 +683,7 @@ function TabItem({
   to?: string
   icon: LucideIcon
   label: string
+  count?: number
 }) {
   const className = cn(
     '-mb-px inline-flex items-center gap-1.5 rounded-t-md border-b-2 px-3 py-2.5 text-sm transition-colors',
@@ -657,6 +698,11 @@ function TabItem({
     <>
       <Icon className="size-4 shrink-0 opacity-80" />
       {label}
+      {count !== undefined && count > 0 && (
+        <span className="ml-1 rounded-full bg-rs-accent/20 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+          {count}
+        </span>
+      )}
     </>
   )
 

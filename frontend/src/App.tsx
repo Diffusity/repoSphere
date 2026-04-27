@@ -12,7 +12,6 @@ import { ProfilePage } from '@/pages/ProfilePage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { RepositoryListPage } from '@/pages/RepositoryListPage'
 import { RepositoryPage } from '@/pages/RepositoryPage'
-import { RepoSettingsPage } from '@/pages/RepoSettingsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
@@ -65,9 +64,11 @@ export default function App() {
           <Route path="/:username/:repoName/commits" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/commits/:branch" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/commit/:hash" element={<CommitDetailPage />} />
-          <Route path="/:username/:repoName/settings" element={<RepoSettingsPage />} />
+          <Route path="/:username/:repoName/settings" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/blob/:branch/*" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/tree/:branch/*" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/issues" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/issues/*" element={<RepositoryPage />} />
           <Route path="/:username/:repoName" element={<RepositoryPage />} />
           <Route path="/:username" element={<ProfilePage />} />
         </Route>

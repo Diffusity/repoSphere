@@ -118,3 +118,37 @@ export interface TerminalSessionState {
   token: string
   status: TerminalSessionStatus
 }
+
+export interface Issue {
+  id: string
+  number: number
+  title: string
+  body: string | null
+  status: 'open' | 'closed'
+  labels: string[]
+  authorUsername: string
+  commentCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IssueDetail extends Issue {
+  comments: IssueComment[]
+}
+
+export interface IssueComment {
+  id: string
+  body: string
+  authorUsername: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IssuesListData {
+  issues: Issue[]
+  openCount: number
+  closedCount: number
+  page: number
+  totalPages: number
+  total: number
+}

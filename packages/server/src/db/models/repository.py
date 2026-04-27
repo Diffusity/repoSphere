@@ -39,6 +39,7 @@ class Repository(Base):
     owner = relationship("User", lazy="selectin")
     branches = relationship("Branch", back_populates="repository", cascade="all, delete-orphan")
     commits = relationship("Commit", back_populates="repository", cascade="all, delete-orphan")
+    issues = relationship("Issue", back_populates="repository", cascade="all, delete-orphan")
     tree_entries = relationship("TreeEntry", back_populates="repository", cascade="all, delete-orphan")
     blobs = relationship("Blob", back_populates="repository", cascade="all, delete-orphan")
     forked_from = relationship(

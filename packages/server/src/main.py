@@ -9,6 +9,7 @@ from src.config.config import CORS_ORIGINS, PORT
 from src.db.database import init_db
 from src.routes.auth import router as auth_router
 from src.routes.repo import router as repo_router
+from src.routes.issues import router as issues_router
 
 
 @asynccontextmanager
@@ -39,20 +40,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Accept",
-        "sessionId",
-        "X-Session-ID",
-        "session-id",
-        "x-session-id",
-        "x-sessionid",
-    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
     max_age=86400,
 )
 
@@ -70,6 +61,7 @@ async def health():
 
 # --- Routes ---
 app.include_router(auth_router)
+app.include_router(issues_router)
 app.include_router(repo_router)
 
 
