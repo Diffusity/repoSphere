@@ -59,6 +59,14 @@ async def get_user_stats(
     return await repo_controller.get_user_stats(username, db)
 
 
+@router.get("/user/{username}/contributions")
+async def get_user_contributions(
+    username: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.get_user_contributions(username, db)
+
+
 @router.get("/explore")
 async def list_public_repositories(
     search: str | None = None,

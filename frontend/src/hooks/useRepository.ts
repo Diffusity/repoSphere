@@ -9,6 +9,7 @@ import {
   fetchCommitDiff,
   fetchUserActivity,
   fetchUserStats,
+  fetchUserContributions,
   updateRepository,
   confirmDeleteRepository
 } from '@/api/repo'
@@ -90,6 +91,16 @@ export function useUserStats(username: string) {
   return useQuery({
     queryKey: ['user-stats', username],
     queryFn: () => fetchUserStats(client, username),
+    enabled: !!username,
+  })
+}
+
+export function useUserContributions(username: string) {
+  const client = useApiClient()
+
+  return useQuery({
+    queryKey: ['user-contributions', username],
+    queryFn: () => fetchUserContributions(client, username),
     enabled: !!username,
   })
 }

@@ -11,7 +11,8 @@ import { useRepositories } from '@/hooks/useRepositories'
 import { formatRelativeTime, truncateHash } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 
-import { useUserActivity, useUserStats } from '@/hooks/useRepository'
+import { useUserActivity, useUserStats, useUserContributions } from '@/hooks/useRepository'
+import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
@@ -22,6 +23,7 @@ export function DashboardPage() {
   const { repositories, isLoading: reposLoading } = useRepositories(username)
   const { data: activityData, isLoading: activityLoading } = useUserActivity(username)
   const { data: statsData, isLoading: statsLoading } = useUserStats(username)
+  const { data: contributions, isLoading: isLoadingContributions } = useUserContributions(username)
 
   const displayName = user?.name ?? me?.user.name ?? 'there'
   const activityList = activityData?.success ? activityData.data : []
@@ -64,6 +66,18 @@ export function DashboardPage() {
           </CardHeader>
         </Card>
       </div>
+
+      <Card className="border-rs-border bg-rs-surface overflow-hidden">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base">Contribution activity</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 pb-2">
+          <ContributionHeatmap 
+            data={contributions?.data} 
+            isLoading={isLoadingContributions} 
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="border-rs-border bg-rs-surface lg:col-span-1">
