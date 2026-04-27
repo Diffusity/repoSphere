@@ -12,9 +12,13 @@ import {
   fetchUserContributions,
   updateRepository,
   confirmDeleteRepository,
-  fetchBranches
+  fetchBranches,
+  toggleStar,
+  checkStar,
+  forkRepository
 } from '@/api/repo'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/stores/authStore'
 import type { Repository } from '@/types'
 
 type UpdateRepositoryPayload = {
@@ -159,6 +163,44 @@ export function useConfirmDeleteRepository() {
       name: string; 
       confirmationName: string 
     }) => confirmDeleteRepository(client, owner, name, confirmationName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] })
+    },
+  })
+}
+
+export function useStarStatus(owner: string, name: string) {
+  const client = useApiClient()
+  const user = useAuthStore((s) => s.user)
+  
+  return useQuery({
+    queryKey: ['star', owner, name],
+    queryFn: () => checkStar(client, owner, name),
+    enabled: !!owner && !!name && !!user,
+  })
+}
+
+export function useToggleStar() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ owner, name }: { owner: string; name: string }) =>
+      toggleStar(client, owner, name),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['star', variables.owner, variables.name] })
+      queryClient.invalidateQueries({ queryKey: ['repository', variables.owner, variables.name] })
+    },
+  })
+}
+
+export function useForkRepository() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ owner, name }: { owner: string; name: string }) =>
+      forkRepository(client, owner, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
     },

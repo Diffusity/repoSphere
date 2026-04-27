@@ -1,4 +1,4 @@
-import { Bell} from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'

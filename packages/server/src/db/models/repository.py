@@ -24,6 +24,9 @@ class Repository(Base):
     default_branch: Mapped[str] = mapped_column(String, nullable=False, default="master")
     stars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     forks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    forked_from_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("repositories.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -38,9 +41,15 @@ class Repository(Base):
     commits = relationship("Commit", back_populates="repository", cascade="all, delete-orphan")
     tree_entries = relationship("TreeEntry", back_populates="repository", cascade="all, delete-orphan")
     blobs = relationship("Blob", back_populates="repository", cascade="all, delete-orphan")
+    forked_from = relationship(
+        "Repository", 
+        remote_side=[id], 
+        primaryjoin="Repository.forked_from_id == Repository.id",
+        lazy="selectin"
+    )
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "id": str(self.id),
             "ownerId": str(self.owner_id),
             "ownerUsername": self.owner.username if self.owner else None,
@@ -53,3 +62,13 @@ class Repository(Base):
             "forks": self.forks,
             "updatedAt": self.updated_at.isoformat(),
         }
+        if self.forked_from_id:
+            if self.forked_from:
+                d["forkedFrom"] = {
+                    "id": str(self.forked_from.id),
+                    "name": self.forked_from.name,
+                    "ownerUsername": self.forked_from.owner.username if self.forked_from.owner else None,
+                }
+            else:
+                d["sourceDeleted"] = True
+        return d

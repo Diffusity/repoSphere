@@ -67,6 +67,12 @@ export interface Repository {
   updatedAt: string
   defaultBranch: string
   latestCommit: CommitSummary
+  forkedFrom?: {
+    id: string
+    name: string
+    ownerUsername: string
+  }
+  sourceDeleted?: boolean
 }
 
 export interface Commit extends CommitSummary {
