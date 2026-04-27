@@ -24,6 +24,9 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
@@ -73,7 +76,7 @@ export function RepositoryPage() {
   const latest = commits[0]
 
   const isBlob = routeKind === 'blob'
-  const isCommitsTab = location.pathname.endsWith('/commits')
+  const isCommitsTab = location.pathname.includes('/commits')
   const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab
 
   const decodedContent = useMemo(() => {
@@ -179,14 +182,14 @@ export function RepositoryPage() {
           active={!isCommitsTab} 
           icon={Code} 
           label="Code" 
-          to={`/${username}/${repoName}`} 
+          to={`/${username}/${repoName}/tree/${branch}`} 
           asLink 
         />
         <TabItem 
           active={isCommitsTab} 
           icon={GitCommit} 
           label="Commits" 
-          to={`/${username}/${repoName}/commits`} 
+          to={`/${username}/${repoName}/commits/${branch}`} 
           asLink 
         />
         {isOwner && (
@@ -202,7 +205,7 @@ export function RepositoryPage() {
             <div className="overflow-hidden rounded-md border border-rs-border bg-rs-surface shadow-[0_0_0_1px_rgba(48,54,61,0.18)]">
               {isObjectRoute ? (
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-rs-border bg-[#0d1117] px-4 py-2 text-sm text-muted-foreground">
-                  <Link to={`/${username}/${repoName}`} className="shrink-0 font-semibold text-foreground hover:text-rs-link">
+                  <Link to={`/${username}/${repoName}/tree/${branch}`} className="shrink-0 font-semibold text-foreground hover:text-rs-link">
                     {repoName}
                   </Link>
                   <span>/</span>
@@ -231,31 +234,64 @@ export function RepositoryPage() {
               ) : null}
 
               <div className="flex flex-wrap items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
-                <div className="flex items-center gap-2 rounded-md border border-rs-border bg-rs-surface px-3 py-1.5 text-sm">
-                  <GitFork className="size-3.5 text-muted-foreground" />
-                  <select
-                    className="max-w-28 bg-transparent font-medium text-foreground outline-none cursor-pointer"
-                    value={branch}
-                    onChange={(e) => {
-                      const newBranch = e.target.value
-                      navigate(`/${username}/${repoName}/tree/${newBranch}`)
-                    }}
-                    aria-label="Branch"
-                  >
-                    {branches.length > 0 ? (
-                      branches.map((b) => (
-                        <option key={b.name} value={b.name} className="bg-[#111]">
-                          {b.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value={repo.defaultBranch} className="bg-[#111]">
-                        {repo.defaultBranch}
-                      </option>
-                    )}
-                  </select>
-                  <ChevronDown className="size-3.5 text-muted-foreground" />
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2 border-rs-border bg-rs-surface h-8 px-3 text-sm font-medium hover:bg-[#212830] transition-colors"
+                    >
+                      <GitFork className="size-3.5 text-muted-foreground" />
+                      <span className="max-w-[120px] truncate">{branch}</span>
+                      <ChevronDown className="size-3.5 text-muted-foreground opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64 bg-rs-surface border-rs-border p-1 shadow-xl">
+                    <DropdownMenuLabel className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+                      Switch branches/tags
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-rs-border" />
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {branches.length > 0 ? (
+                        branches.map((b) => (
+                          <DropdownMenuItem
+                            key={b.name}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-2 cursor-pointer rounded-sm hover:bg-rs-accent hover:text-white transition-colors focus:bg-rs-accent focus:text-white",
+                              b.name === branch && "bg-rs-accent/10 text-rs-link font-semibold"
+                            )}
+                            onSelect={() => {
+                              const targetUrl = isCommitsTab 
+                                ? `/${username}/${repoName}/commits/${b.name}`
+                                : `/${username}/${repoName}/tree/${b.name}`
+                              navigate(targetUrl)
+                            }}
+                          >
+                            <span className="truncate">{b.name}</span>
+                            {b.name === branch && <div className="size-1.5 rounded-full bg-rs-link" />}
+                          </DropdownMenuItem>
+                        ))
+                      ) : (
+                        <DropdownMenuItem
+                          className={cn(
+                            "flex items-center justify-between px-3 py-2 cursor-pointer rounded-sm hover:bg-rs-accent hover:text-white transition-colors focus:bg-rs-accent focus:text-white",
+                            "bg-rs-accent/10 text-rs-link font-semibold"
+                          )}
+                          onSelect={() => {
+                            const defaultBranch = repo?.defaultBranch || RS_BRANCH_DEFAULT
+                            const targetUrl = isCommitsTab 
+                              ? `/${username}/${repoName}/commits/${defaultBranch}`
+                              : `/${username}/${repoName}/tree/${defaultBranch}`
+                            navigate(targetUrl)
+                          }}
+                        >
+                          <span className="truncate">{repo?.defaultBranch || RS_BRANCH_DEFAULT}</span>
+                          <div className="size-1.5 rounded-full bg-rs-link" />
+                        </DropdownMenuItem>
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 <Button
                   variant="outline"
@@ -263,7 +299,7 @@ export function RepositoryPage() {
                   className="h-8 border-rs-border bg-rs-surface px-3 text-muted-foreground hover:bg-[#212830]"
                   asChild
                 >
-                  <Link to={`/${username}/${repoName}/commits`}>
+                  <Link to={`/${username}/${repoName}/commits/${branch}`}>
                     <History className="size-3.5" />
                     {commitsLoading ? '...' : commits.length} commits
                   </Link>
