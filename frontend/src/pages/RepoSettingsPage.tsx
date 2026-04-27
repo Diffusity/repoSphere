@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -126,10 +127,18 @@ function RepoSettingsForm({
         </Link>
       </div>
 
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="size-6 text-muted-foreground" />
-        <h1 className="page-title">Repository Settings</h1>
-      </div>
+      <PageHeader
+        badge="Repository controls"
+        title="Repository settings"
+        description={`Manage ${username}/${repoName}, update metadata, and handle high-impact repository actions.`}
+        icon={SettingsIcon}
+        meta={
+          <>
+            <span className="page-meta-pill">Default branch: {defaultBranch}</span>
+            <span className="page-meta-pill">Visibility: {visibility}</span>
+          </>
+        }
+      />
 
       <div className="space-y-6">
         <Card className="surface-panel">

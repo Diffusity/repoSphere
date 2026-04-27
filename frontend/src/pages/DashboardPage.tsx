@@ -2,6 +2,7 @@ import { FolderGit2, GitBranchPlus, Plus, Sparkles, Terminal, Users, type Lucide
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,22 +32,33 @@ export function DashboardPage() {
 
   return (
     <div className="app-page">
-      <section className="surface-panel overflow-hidden">
-        <div className="flex flex-wrap items-center gap-4 p-5">
-          {!authLoaded || userLoading ? (
-            <Skeleton className="size-14 rounded-full" />
+      <PageHeader
+        badge="Workspace overview"
+        title={`Welcome back, ${displayName}`}
+        description="Here is the latest across your repositories, contributors, and terminal workflow."
+        visual={
+          !authLoaded || userLoading ? (
+            <Skeleton className="size-14 rounded-xl" />
           ) : (
-            <Avatar className="size-14 border border-rs-border bg-rs-elevated">
+            <Avatar className="size-14 border border-rs-border bg-rs-elevated shadow-lg shadow-black/20">
               <AvatarImage src={user?.imageUrl ?? me?.user.imageUrl ?? undefined} />
               <AvatarFallback className="bg-rs-elevated text-lg font-semibold">{displayName[0]}</AvatarFallback>
             </Avatar>
-          )}
-          <div className="min-w-0">
-            <h1 className="page-title">Welcome back, {displayName}</h1>
-            <p className="page-subtitle">Here is what is happening across your repositories.</p>
-          </div>
-        </div>
-      </section>
+          )
+        }
+        meta={
+          <>
+            <span className="page-meta-pill">
+              <FolderGit2 className="size-3.5 text-rs-link" />
+              {reposLoading ? 'Syncing repositories' : `${stats.repoCount} tracked repositories`}
+            </span>
+            <span className="page-meta-pill">
+              <GitBranchPlus className="size-3.5 text-rs-accent" />
+              {statsLoading ? 'Updating commit totals' : `${stats.commitsToday} commits today`}
+            </span>
+          </>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard

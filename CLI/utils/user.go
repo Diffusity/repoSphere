@@ -22,7 +22,11 @@ var HomeDir string = func() string {
 var SessionFilePath = filepath.Join(HomeDir, ".rs_session")
 
 func CreateSessionFile() {
-	os.Create(SessionFilePath)
+	file, err := os.Create(SessionFilePath)
+	if err != nil {
+		return
+	}
+	_ = file.Close()
 }
 
 func GetSession() *Session {

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useApiClient } from '@/api/client'
 import { createRepository } from '@/api/repo'
 import { RepoCard } from '@/components/common/RepoCard'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -53,13 +54,19 @@ export function RepositoryListPage() {
 
   return (
     <div className="app-page">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="page-heading">
-          <h1 className="page-title">Repositories</h1>
-          <p className="page-subtitle">Manage your code and collaborations.</p>
-        </div>
-        <NewRepoDialog />
-      </div>
+      <PageHeader
+        badge="Repository workspace"
+        title="Your repositories"
+        description="Search, sort, and create repositories from the same UI language as the landing and auth experience."
+        icon={FolderGit2}
+        meta={
+          <>
+            <span className="page-meta-pill">{isLoading ? 'Loading repository index' : `${repositories.length} repositories`}</span>
+            <span className="page-meta-pill">Owner: {username || 'current user'}</span>
+          </>
+        }
+        actions={<NewRepoDialog />}
+      />
 
       <div className="surface-panel flex flex-col gap-4 p-4 md:flex-row md:items-center">
         <div className="relative flex-1">
@@ -73,7 +80,7 @@ export function RepositoryListPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <select
-            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none focus:border-rs-link"
+            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none transition focus:border-rs-link focus:ring-2 focus:ring-rs-link/20"
             value={lang}
             onChange={(e) => setLang(e.target.value as typeof lang)}
             aria-label="Filter by language"
@@ -85,7 +92,7 @@ export function RepositoryListPage() {
             ))}
           </select>
           <select
-            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none focus:border-rs-link"
+            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none transition focus:border-rs-link focus:ring-2 focus:ring-rs-link/20"
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
             aria-label="Sort repositories"
@@ -110,7 +117,7 @@ export function RepositoryListPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="border-dashed border-rs-border bg-rs-surface/70">
+        <Card className="empty-panel">
           <CardHeader className="flex flex-col items-center py-16 text-center">
             <FolderGit2 className="mb-4 size-16 text-muted-foreground/40" />
             <CardTitle>No repositories found</CardTitle>

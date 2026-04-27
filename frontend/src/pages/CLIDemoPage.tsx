@@ -109,8 +109,9 @@ export function CLIDemoPage() {
 
   /* ── animation orchestrator ────────────────────────────── */
 
-  const runDemo = React.useCallback(async () => {
-    const thisRun = ++runIdRef.current
+  const runDemo = React.useCallback(async (runId?: number) => {
+    const thisRun = runId ?? runIdRef.current + 1
+    runIdRef.current = thisRun
     setLines([])
     setIsDone(false)
     setIsRunning(true)
@@ -172,10 +173,11 @@ export function CLIDemoPage() {
 
   /* auto-start on mount */
   React.useEffect(() => {
-    void runDemo()
+    const initialRunId = runIdRef.current + 1
+    void runDemo(initialRunId)
     return () => {
       // Bump runId so any in-flight demo from this mount becomes stale
-      runIdRef.current++
+      runIdRef.current = initialRunId + 1
     }
   }, [runDemo])
 

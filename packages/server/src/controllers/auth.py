@@ -286,12 +286,17 @@ async def get_user(
 
 
 async def create_terminal_session(
+    current_user: User | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """POST /api/v1/auth/session — Create a new anonymous terminal session."""
     token = f"{uuid.uuid4()}:{uuid.uuid4()}:{uuid.uuid4()}"
 
-    session = TerminalSession(token=token, status="inactive")
+    session = TerminalSession(
+        token=token,
+        status="inactive",
+        user_id=current_user.id if current_user else None,
+    )
     db.add(session)
     await db.commit()
     await db.refresh(session)
@@ -304,6 +309,87 @@ async def create_terminal_session(
             "token": token,
         },
     }
+
+
+async def activate_terminal_session(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """POST /api/v1/auth/session/cli/{token} — Exchange a web-generated token for a CLI JWT."""
+    result = await db.execute(
+        select(TerminalSession).where(TerminalSession.token == token)
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        return {"success": False, "message": "Session not found"}
+
+    if not session.user_id:
+        return {
+            "success": False,
+            "message": "Session is not linked to a web account. Generate a CLI token from the dashboard or use rs login.",
+        }
+
+    if session.status == "active":
+        return {"success": False, "message": "Session already used"}
+
+    if session.status == "deleted":
+        return {"success": False, "message": "Session has been revoked"}
+
+    user_result = await db.execute(
+        select(User).where(User.id == session.user_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        return {"success": False, "message": "User not found"}
+
+    session.status = "active"
+    await db.commit()
+
+    jwt_token = jwt_service.generate_token(
+        {"email": user.email, "sessionId": str(session.id)}
+    )
+
+    return {
+        "success": True,
+        "message": "CLI authenticated successfully",
+        "data": {
+            "email": user.email,
+            "token": jwt_token,
+        },
+    }
+
+
+async def revoke_terminal_session(
+    session_id: str,
+    current_user: User = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    """DELETE /api/v1/auth/session/{sessionId} — Revoke a generated or active terminal session."""
+    try:
+        sid = uuid.UUID(session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid session ID")
+
+    result = await db.execute(
+        select(TerminalSession).where(TerminalSession.id == sid)
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        return {"success": False, "message": "Session not found"}
+
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not have access to this session")
+
+    if session.status == "deleted":
+        return {"success": True, "message": "Session revoked successfully"}
+
+    session.status = "deleted"
+    await db.commit()
+
+    return {"success": True, "message": "Session revoked successfully"}
 
 
 async def complete_terminal_session(
@@ -320,8 +406,14 @@ async def complete_terminal_session(
     if not session:
         return {"success": False, "message": "Session not found"}
 
+    if session.status == "deleted":
+        return {"success": False, "message": "Session has been revoked"}
+
     if session.status == "active":
         return {"success": False, "message": "Session already used"}
+
+    if session.user_id and session.user_id != current_user.id:
+        return {"success": False, "message": "Session belongs to a different user"}
 
     session.user_id = current_user.id
     session.status = "active"

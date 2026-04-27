@@ -2,6 +2,7 @@ import { ChevronLeft, GitCommit, Loader2 } from 'lucide-react'
 import { useParams, Link } from 'react-router-dom'
 import { CommitHash } from '@/components/common/CommitHash'
 import { DiffViewer } from '@/components/common/DiffViewer'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -51,6 +52,27 @@ export function CommitDetailPage() {
         </Link>
       </div>
 
+      <PageHeader
+        badge="Commit detail"
+        title={commit.message}
+        description={`${username}/${repoName}`}
+        icon={GitCommit}
+        meta={
+          <>
+            <span className="page-meta-pill">{formatRelativeTime(commit.timestamp)}</span>
+            <span className="page-meta-pill">{nFiles} changed file{nFiles === 1 ? '' : 's'}</span>
+          </>
+        }
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="h-9 border-rs-border bg-transparent font-mono text-xs" asChild>
+              <Link to={`/${username}/${repoName}/tree/${commit.hash}`}>Browse files</Link>
+            </Button>
+            <CommitHash hash={commit.hash} />
+          </>
+        }
+      />
+
       <header className="surface-panel overflow-hidden">
         <div className="border-b border-rs-border bg-rs-bg/45 px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -60,22 +82,14 @@ export function CommitDetailPage() {
                   <ChevronLeft className="size-6" />
                 </Link>
               </Button>
-              <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden h-8 border-rs-border bg-transparent font-mono text-xs sm:flex" asChild>
-                <Link to={`/${username}/${repoName}/tree/${commit.hash}`}>
-                  Browse files
-                </Link>
-              </Button>
-              <CommitHash hash={commit.hash} />
+              <div>
+                <h2 className="text-xl font-semibold text-white">Commit overview</h2>
+                {commit.description ? (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{commit.description}</p>
+                ) : null}
+              </div>
             </div>
           </div>
-          {commit.description && (
-            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-              {commit.description}
-            </p>
-          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 px-6 py-3 text-sm">

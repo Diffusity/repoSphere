@@ -78,6 +78,18 @@
     @apply mx-auto w-full max-w-6xl space-y-6;
   }
 
+  .page-hero {
+    @apply relative overflow-hidden rounded-xl border border-rs-border/80 bg-rs-surface/82 p-5 shadow-xl shadow-black/20 backdrop-blur md:p-6;
+    background:
+      linear-gradient(135deg, rgba(108, 182, 255, 0.08), transparent 30%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 50%),
+      rgba(17, 24, 39, 0.9);
+  }
+
+  .page-hero-glow {
+    @apply pointer-events-none absolute -right-14 -top-16 h-36 w-36 rounded-full bg-rs-link/12 blur-3xl;
+  }
+
   .page-heading {
     @apply space-y-1;
   }
@@ -90,12 +102,24 @@
     @apply max-w-2xl text-sm leading-6 text-muted-foreground;
   }
 
+  .page-kicker {
+    @apply inline-flex items-center gap-2 rounded-md border border-rs-link/20 bg-rs-link/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-rs-link;
+  }
+
+  .page-meta-pill {
+    @apply inline-flex items-center gap-2 rounded-md border border-rs-border bg-rs-bg/45 px-3 py-1.5 text-xs text-muted-foreground;
+  }
+
   .surface-panel {
     @apply rounded-lg border border-rs-border/80 bg-rs-surface/80 shadow-sm shadow-black/20;
   }
 
   .interactive-panel {
     @apply rounded-lg border border-rs-border/80 bg-rs-surface/80 shadow-sm shadow-black/20 transition hover:border-rs-link/45 hover:bg-rs-elevated/70;
+  }
+
+  .empty-panel {
+    @apply rounded-xl border border-dashed border-rs-border bg-rs-surface/72 py-12 text-center shadow-sm shadow-black/10;
   }
 
   .subtle-grid {

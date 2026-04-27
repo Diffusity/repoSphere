@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Diffusity/repoSphere/internal/apis"
@@ -11,7 +12,7 @@ import (
 func Login() {
 	existingSession := utils.GetSession()
 	if existingSession != nil && existingSession.Email != "" && existingSession.Token != "" {
-		fmt.Printf("⚠️  You are already logged in as %s.\n", existingSession.Email)
+		fmt.Printf("Warning: you are already logged in as %s.\n", existingSession.Email)
 		fmt.Print("Do you want to log in again? (y/N): ")
 		var response string
 		fmt.Scanln(&response)
@@ -23,7 +24,7 @@ func Login() {
 
 	session, err := apis.CreateSessionApi()
 	if err != nil {
-		fmt.Println("Error in Generating Session:", err)
+		fmt.Println("Error in generating session:", err)
 		return
 	}
 
@@ -38,7 +39,7 @@ func Login() {
 	fmt.Println("Waiting for authentication...")
 	for time.Now().Before(endTime) {
 		time.Sleep(3 * time.Second)
-		fmt.Print(".") // Status indicator
+		fmt.Print(".")
 
 		data, err := apis.CheckSessionApi(sessionId)
 		if err != nil {
@@ -49,17 +50,17 @@ func Login() {
 		case "active":
 			if data.Token != "" {
 				utils.SetSession(data.Email, data.Token)
-				fmt.Printf("✅ Logged in successfully with email %s\n", data.Email)
-				return
-			} else {
-				fmt.Println("⚠️ Try again later")
+				fmt.Printf("Logged in successfully with email %s\n", data.Email)
 				return
 			}
+
+			fmt.Println("Try again later")
+			return
 		case "expired":
-			fmt.Println("⚠️ Session expired")
+			fmt.Println("Session expired")
 			return
 		case "deleted":
-			fmt.Println("⚠️ Session deleted")
+			fmt.Println("Session deleted")
 			return
 		}
 	}
@@ -68,11 +69,11 @@ func Login() {
 func User() {
 	session := utils.GetSession()
 	if session == nil || session.Email == "" || session.Token == "" {
-		fmt.Println("⚠️ You are not logged in")
+		fmt.Println("You are not logged in")
 		return
-	} else {
-		fmt.Println("User:", session.Email)
 	}
+
+	fmt.Println("User:", session.Email)
 }
 
 func Logout() {
@@ -80,10 +81,39 @@ func Logout() {
 	if session != nil && session.Token != "" {
 		err := apis.LogoutApi(session.Token)
 		if err != nil {
-			fmt.Printf("⚠️  Warning: Could not invalidate session on server: %v\n", err)
+			fmt.Printf("Warning: could not invalidate session on server: %v\n", err)
 		}
 	}
 
 	utils.DeleteSession()
-	fmt.Println("\n✅ Logged out successfully")
+	fmt.Println("\nLogged out successfully")
+}
+
+func Auth(token string) {
+	existingSession := utils.GetSession()
+	if existingSession != nil && existingSession.Email != "" && existingSession.Token != "" {
+		fmt.Printf("Warning: you are already logged in as %s.\n", existingSession.Email)
+		fmt.Print("Do you want to replace the current session? (y/N): ")
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" && response != "Y" {
+			fmt.Println("Aborted.")
+			return
+		}
+	}
+
+	data, err := apis.ActivateTerminalSessionApi(token)
+	if err != nil {
+		if strings.Contains(err.Error(), "status 404") {
+			fmt.Println("This server does not support 'rs auth' yet.")
+			fmt.Println("Deploy the updated backend from packages/server, or point RS_BACKEND_URL to a server with /api/v1/auth/session/cli/{token}.")
+			fmt.Println("You can still use 'rs login' against the currently deployed server.")
+			return
+		}
+		fmt.Println("Error in authenticating CLI token:", err)
+		return
+	}
+
+	utils.SetSession(data.Email, data.Token)
+	fmt.Printf("CLI authenticated successfully with email %s\n", data.Email)
 }

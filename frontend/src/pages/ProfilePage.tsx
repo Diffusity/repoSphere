@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
 import { RepoCard } from '@/components/common/RepoCard'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -22,24 +22,25 @@ export function ProfilePage() {
 
   return (
     <div className="app-page max-w-5xl">
-      <section className="surface-panel p-5">
-        <div className="flex flex-wrap items-start gap-5">
-          <Avatar className="size-24 border border-rs-border bg-rs-elevated">
+      <PageHeader
+        badge={isYou ? 'Your profile' : 'Public profile'}
+        title={displayName}
+        description={`@${username || 'user'} on RepoSphere`}
+        visual={
+          <Avatar className="size-16 border border-rs-border bg-rs-elevated shadow-lg shadow-black/20">
             <AvatarImage src={isYou ? user?.imageUrl ?? undefined : undefined} />
-            <AvatarFallback className="bg-rs-elevated text-2xl font-semibold text-white">
+            <AvatarFallback className="bg-rs-elevated text-xl font-semibold text-white">
               {username[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1 space-y-2">
-            <h1 className="page-title">{displayName}</h1>
-            <p className="text-muted-foreground">@{username}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{isLoading ? '...' : repositories.length} repositories</Badge>
-              {isYou ? <Badge className="border-rs-link/30 bg-rs-link/10 text-rs-link">It is you</Badge> : null}
-            </div>
-          </div>
-        </div>
-      </section>
+        }
+        meta={
+          <>
+            <span className="page-meta-pill">{isLoading ? 'Loading repositories' : `${repositories.length} repositories`}</span>
+            {isYou ? <span className="page-meta-pill">Signed in as this account</span> : null}
+          </>
+        }
+      />
 
       <ContributionHeatmap data={contributions?.data} isLoading={isLoadingContributions} />
 

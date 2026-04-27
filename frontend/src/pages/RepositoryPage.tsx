@@ -18,6 +18,7 @@ import {
 import { Fragment, useMemo } from 'react'
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { RepositoryEntries } from '@/components/common/RepositoryEntries'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -139,43 +140,34 @@ export function RepositoryPage() {
 
   return (
     <div className="app-page max-w-[1280px]">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <Link to={`/${username}`} className="font-medium text-rs-link hover:underline">
-              {username}
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="font-semibold text-rs-link">{repoName}</span>
-            <Badge
-              variant="secondary"
-              className="rounded-full border border-rs-border bg-transparent px-2 text-[10px] font-medium capitalize text-muted-foreground"
-            >
-              {repo.visibility}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
-            <h1 className="truncate text-2xl font-semibold tracking-tight text-white">{repo.name}</h1>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span>{repo.description?.trim() || 'No description provided.'}</span>
-            <span className="inline-flex items-center gap-1.5">
+      <PageHeader
+        badge="Repository workspace"
+        title={repoPath}
+        description={repo.description?.trim() || 'No description provided.'}
+        icon={FolderGit2}
+        meta={
+          <>
+            <span className="page-meta-pill">
               <Circle className="size-2 fill-current text-rs-warm" />
               {repo.language || 'Plain Text'}
             </span>
-            <span>Updated {formatRelativeTime(repo.updatedAt)}</span>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-          <RepoActionButton icon={Eye} label="Watch" value="0" />
-          <RepoActionButton icon={GitFork} label="Fork" value={String(repo.forks)} />
-          <RepoActionButton icon={Star} label="Star" value={String(repo.stars)} />
-        </div>
-      </header>
+            <span className="page-meta-pill">Updated {formatRelativeTime(repo.updatedAt)}</span>
+            <Badge
+              variant="secondary"
+              className="h-8 rounded-md border border-rs-border bg-rs-bg/45 px-3 text-[11px] font-medium capitalize text-muted-foreground"
+            >
+              {repo.visibility}
+            </Badge>
+          </>
+        }
+        actions={
+          <>
+            <RepoActionButton icon={Eye} label="Watch" value="0" />
+            <RepoActionButton icon={GitFork} label={isOwner ? 'Forks' : 'Fork'} value={String(repo.forks)} />
+            <RepoActionButton icon={Star} label="Star" value={String(repo.stars)} />
+          </>
+        }
+      />
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 

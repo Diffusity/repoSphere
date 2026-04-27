@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useApiClient } from '@/api/client'
 import { fetchExploreRepositories } from '@/api/repo'
 import { RepoCard } from '@/components/common/RepoCard'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -36,16 +37,13 @@ export function ExplorePage() {
 
   return (
     <div className="app-page">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="page-heading">
-          <h1 className="page-title">Explore</h1>
-          <p className="page-subtitle">Discover public repositories from across the network.</p>
-        </div>
-        <div className="hidden items-center gap-2 rounded-md border border-rs-border bg-rs-surface/80 px-3 py-2 text-sm text-muted-foreground sm:flex">
-          <Sparkles className="size-4 text-rs-warm" />
-          Featured repositories
-        </div>
-      </div>
+      <PageHeader
+        badge="Discover"
+        title="Explore repositories"
+        description="Browse public projects, filter by language, and jump into active codespaces without leaving the RepoSphere aesthetic."
+        icon={Sparkles}
+        meta={<span className="page-meta-pill">Public discovery surface</span>}
+      />
 
       <section className="space-y-4">
         <h2 className="text-base font-semibold text-white">Featured</h2>
@@ -102,7 +100,7 @@ export function ExplorePage() {
             ))}
           </div>
         ) : repositories.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-rs-border bg-rs-surface py-12 text-center">
+          <div className="empty-panel">
             <p className="text-muted-foreground">No matching repositories found.</p>
           </div>
         ) : (

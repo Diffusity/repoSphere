@@ -106,6 +106,11 @@ export async function pollTerminalSession(client: AxiosInstance, sessionId: stri
   return data
 }
 
+export async function revokeTerminalSession(client: AxiosInstance, sessionId: string) {
+  const { data } = await client.delete<{ success: boolean; message: string }>(`/api/v1/auth/session/${sessionId}`)
+  return data
+}
+
 export async function completeTerminalSession(client: AxiosInstance, token: string) {
   const { data } = await client.post<{ success: boolean; message: string }>(
     `/api/v1/auth/session/${token}`

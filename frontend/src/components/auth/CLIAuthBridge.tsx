@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useCreateTerminalSession, useTerminalSessionPoll } from '@/hooks/useTerminalSession'
+import { useCreateTerminalSession, useRevokeTerminalSession, useTerminalSessionPoll } from '@/hooks/useTerminalSession'
 import { cn } from '@/lib/utils'
 
 function CopyBlock({ text }: { text: string }) {
@@ -32,6 +32,7 @@ function CopyBlock({ text }: { text: string }) {
 
 export function CLIAuthBridge() {
   const create = useCreateTerminalSession()
+  const revoke = useRevokeTerminalSession()
   const [sessionId, setSessionId] = React.useState<string | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
   const poll = useTerminalSessionPoll(sessionId)
@@ -39,11 +40,17 @@ export function CLIAuthBridge() {
   const valid = poll.data?.data?.valid
   const terminalJwt = poll.data?.data?.token ?? ''
   const active = valid === 'active'
+  const revoked = valid === 'deleted'
 
   async function generate() {
     const data = await create.mutateAsync()
     setSessionId(data.sessionId)
     setToken(data.token)
+  }
+
+  async function revokeSession() {
+    if (!sessionId) return
+    await revoke.mutateAsync(sessionId)
   }
 
   const cmd = token ? `rs auth ${token}` : ''
@@ -72,23 +79,29 @@ export function CLIAuthBridge() {
             </Button>
           ) : (
             <>
-              <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-start">
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Run in your terminal:</p>
-                  <CopyBlock text={cmd} />
+              {revoked ? (
+                <div className="rounded-lg border border-rs-danger/30 bg-rs-danger/10 p-4 text-sm text-muted-foreground">
+                  This CLI token has been revoked. Generate a new session to issue another one-time token.
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-rs-border bg-rs-bg/70 p-4">
-                  <span className="text-xs text-muted-foreground">Scan token</span>
-                  <QRCodeSVG value={token ?? ''} size={128} level="M" fgColor="#f0f6fc" bgColor="#0d1117" />
-                  <span className="max-w-[180px] break-all text-center font-mono text-[10px] text-muted-foreground">
-                    {token}
-                  </span>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-start">
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Run in your terminal:</p>
+                    <CopyBlock text={cmd} />
+                  </div>
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-rs-border bg-rs-bg/70 p-4">
+                    <span className="text-xs text-muted-foreground">Scan token</span>
+                    <QRCodeSVG value={token ?? ''} size={128} level="M" fgColor="#f0f6fc" bgColor="#0d1117" />
+                    <span className="max-w-[180px] break-all text-center font-mono text-[10px] text-muted-foreground">
+                      {token}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm text-muted-foreground">Session status:</span>
-                {poll.isFetching && !active ? (
+                {poll.isFetching && !active && !revoked ? (
                   <Badge variant="outline" className="gap-1">
                     <Loader2 className="size-3 animate-spin" />
                     Waiting for CLI...
@@ -99,7 +112,12 @@ export function CLIAuthBridge() {
                     CLI authenticated
                   </Badge>
                 ) : null}
-                {!active && !poll.isFetching && sessionId ? (
+                {revoked ? (
+                  <Badge variant="destructive">
+                    Revoked
+                  </Badge>
+                ) : null}
+                {!active && !revoked && !poll.isFetching && sessionId ? (
                   <span className="text-xs text-muted-foreground">
                     Polling every 2s until <code>rs auth</code> completes.
                   </span>
@@ -124,13 +142,31 @@ export function CLIAuthBridge() {
                 </div>
               ) : null}
 
-              <Button variant="outline" size="sm" onClick={() => void generate()}>
-                New session
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                {!revoked ? (
+                  <Button variant="destructive" size="sm" onClick={() => void revokeSession()} disabled={revoke.isPending}>
+                    {revoke.isPending ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Revoking...
+                      </>
+                    ) : (
+                      'Revoke token'
+                    )}
+                  </Button>
+                ) : null}
+
+                <Button variant="outline" size="sm" onClick={() => void generate()} disabled={create.isPending}>
+                  New session
+                </Button>
+              </div>
             </>
           )}
           {create.isError ? (
             <p className="text-sm text-rs-danger">{(create.error as Error).message}</p>
+          ) : null}
+          {revoke.isError ? (
+            <p className="text-sm text-rs-danger">{(revoke.error as Error).message}</p>
           ) : null}
         </CardContent>
       </Card>

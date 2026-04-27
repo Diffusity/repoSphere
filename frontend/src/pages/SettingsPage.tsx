@@ -1,5 +1,6 @@
 import { Bell, ShieldCheck, UserRound } from 'lucide-react'
 import { CLIAuthBridge } from '@/components/auth/CLIAuthBridge'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,13 +14,26 @@ export function SettingsPage() {
 
   return (
     <div className="app-page max-w-4xl">
-      <div className="page-heading">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Manage your profile, CLI access, and preferences.</p>
-      </div>
+      <PageHeader
+        badge="Account controls"
+        title="Settings"
+        description="Manage your profile, CLI access, and notification preferences inside the same dark command-center feel."
+        visual={
+          <Avatar className="size-14 border border-rs-border bg-rs-elevated shadow-lg shadow-black/20">
+            <AvatarImage src={user?.imageUrl ?? undefined} />
+            <AvatarFallback className="bg-rs-elevated text-lg font-semibold">{user?.name?.[0] ?? 'U'}</AvatarFallback>
+          </Avatar>
+        }
+        meta={
+          <>
+            <span className="page-meta-pill">{user?.email ?? 'Signed-in account'}</span>
+            <span className="page-meta-pill">CLI handoff enabled</span>
+          </>
+        }
+      />
 
       <Tabs defaultValue="profile">
-        <TabsList className="bg-rs-surface">
+        <TabsList className="h-auto rounded-lg border border-rs-border bg-rs-surface/85 p-1">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="cli">CLI authentication</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
