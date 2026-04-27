@@ -1,23 +1,21 @@
 import { ChevronDown, ChevronRight, History, GitCommit, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CommitHash } from '@/components/common/CommitHash'
 import { DiffViewer } from '@/components/common/DiffViewer'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { formatCommitDate, formatRelativeTime } from '@/lib/utils'
-import { useRepository, useCommits, useCommitDiff } from '@/hooks/useRepository'
-import { RS_BRANCH_DEFAULT } from '@/lib/constants'
+import { useCommits, useCommitDiff } from '@/hooks/useRepository'
 
-export function CommitListPage() {
-  const { username = '', repoName = '', branch: branchFromRoute } = useParams()
-  const branch = branchFromRoute ?? RS_BRANCH_DEFAULT
-  
-  const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
+interface CommitListProps {
+  username: string
+  repoName: string
+  branch: string
+}
+
+export function CommitList({ username, repoName, branch }: CommitListProps) {
   const { data: commitsRes, isLoading: commitsLoading } = useCommits(username, repoName, branch)
-  
-  const repo = repoRes?.success ? repoRes.data : null
   const commits = commitsRes?.success ? commitsRes.data : []
   
   const [expandedHash, setExpandedHash] = useState<string | null>(null)
@@ -32,39 +30,18 @@ export function CommitListPage() {
     return Array.from(groups.entries())
   }, [commits])
 
-  if (repoLoading || (commitsLoading && commits.length === 0)) {
+  if (commitsLoading && commits.length === 0) {
     return (
-      <div className="mx-auto max-w-4xl space-y-8 py-8">
-        <Skeleton className="h-10 w-64" />
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
-        </div>
-      </div>
-    )
-  }
-
-  if (!repo) {
-    return (
-      <div className="mx-auto max-w-3xl py-16 text-center text-muted-foreground">
-        Unknown repository
+      <div className="space-y-4 py-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-24 w-full animate-pulse rounded-lg bg-rs-surface/50 border border-rs-border" />
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 lg:px-0">
-      <div className="flex flex-col gap-2">
-        <div className="text-sm text-muted-foreground">
-          <Link to={`/${username}/${repoName}`} className="text-rs-link hover:underline">
-            {username}/{repoName}
-          </Link>
-        </div>
-        <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
-          <History className="size-6 text-muted-foreground" />
-          Commits on {branch}
-        </h1>
-      </div>
-
+    <div className="space-y-8">
       <div className="space-y-10">
         {byDate.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-rs-border rounded-lg bg-rs-surface">
@@ -74,7 +51,8 @@ export function CommitListPage() {
         ) : (
           byDate.map(([label, list]) => (
             <section key={label}>
-              <h2 className="mb-4 border-b border-rs-border pb-2 text-sm font-semibold text-muted-foreground">
+              <h2 className="mb-4 border-b border-rs-border pb-2 text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <History className="size-4" />
                 Commits on {label}
               </h2>
               <ul className="divide-y divide-rs-border rounded-lg border border-rs-border bg-rs-surface">

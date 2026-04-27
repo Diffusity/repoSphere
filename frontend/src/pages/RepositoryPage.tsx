@@ -39,6 +39,7 @@ import {
 } from '@/hooks/useRepository'
 import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
+import { CommitList } from '@/components/repo/CommitList'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -68,7 +69,8 @@ export function RepositoryPage() {
   const latest = commits[0]
 
   const isBlob = routeKind === 'blob'
-  const showReadme = !isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')
+  const isCommitsTab = location.pathname.endsWith('/commits')
+  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab
 
   const decodedContent = useMemo(() => {
     if (!blob) return ''
@@ -169,246 +171,264 @@ export function RepositoryPage() {
       </header>
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
-        <TabItem active icon={Code} label="Code" />
-        <TabItem icon={GitCommit} label="Commits" to={`/${username}/${repoName}/commits`} asLink />
+        <TabItem 
+          active={!isCommitsTab} 
+          icon={Code} 
+          label="Code" 
+          to={`/${username}/${repoName}`} 
+          asLink 
+        />
+        <TabItem 
+          active={isCommitsTab} 
+          icon={GitCommit} 
+          label="Commits" 
+          to={`/${username}/${repoName}/commits`} 
+          asLink 
+        />
         {isOwner && (
           <TabItem icon={Settings} label="Settings" to={`/${username}/${repoName}/settings`} asLink />
         )}
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_296px]">
+      <div className={cn("grid gap-8", !isCommitsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
-          <div className="overflow-hidden rounded-md border border-rs-border bg-rs-surface shadow-[0_0_0_1px_rgba(48,54,61,0.18)]">
-            {isObjectRoute ? (
-              <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-rs-border bg-[#0d1117] px-4 py-2 text-sm text-muted-foreground">
-                <Link to={`/${username}/${repoName}`} className="shrink-0 font-semibold text-foreground hover:text-rs-link">
-                  {repoName}
-                </Link>
-                <span>/</span>
-                <span>{routeKind}</span>
-                <span>/</span>
-                <Link to={repoTreeUrl(username, repoName, branch, '')} className="hover:text-rs-link">
-                  {branch}
-                </Link>
-                {treePathInRepo.split('/').filter(Boolean).map((seg, i, arr) => {
-                  const cum = arr.slice(0, i + 1).join('/')
-                  const isLast = i === arr.length - 1
-                  const href = (isLast && isBlob)
-                    ? repoBlobUrl(username, repoName, branch, cum)
-                    : repoTreeUrl(username, repoName, branch, cum)
+          {isCommitsTab ? (
+            <CommitList username={username} repoName={repoName} branch={branch} />
+          ) : (
+            <div className="overflow-hidden rounded-md border border-rs-border bg-rs-surface shadow-[0_0_0_1px_rgba(48,54,61,0.18)]">
+              {isObjectRoute ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-rs-border bg-[#0d1117] px-4 py-2 text-sm text-muted-foreground">
+                  <Link to={`/${username}/${repoName}`} className="shrink-0 font-semibold text-foreground hover:text-rs-link">
+                    {repoName}
+                  </Link>
+                  <span>/</span>
+                  <span>{routeKind}</span>
+                  <span>/</span>
+                  <Link to={repoTreeUrl(username, repoName, branch, '')} className="hover:text-rs-link">
+                    {branch}
+                  </Link>
+                  {treePathInRepo.split('/').filter(Boolean).map((seg, i, arr) => {
+                    const cum = arr.slice(0, i + 1).join('/')
+                    const isLast = i === arr.length - 1
+                    const href = (isLast && isBlob)
+                      ? repoBlobUrl(username, repoName, branch, cum)
+                      : repoTreeUrl(username, repoName, branch, cum)
 
-                  return (
-                    <Fragment key={cum}>
-                      <span>/</span>
-                      <Link to={href} className={cn('hover:text-rs-link', isLast && isBlob && 'text-foreground hover:text-foreground')}>
-                        {seg}
-                      </Link>
-                    </Fragment>
-                  )
-                })}
-              </div>
-            ) : null}
+                    return (
+                      <Fragment key={cum}>
+                        <span>/</span>
+                        <Link to={href} className={cn('hover:text-rs-link', isLast && isBlob && 'text-foreground hover:text-foreground')}>
+                          {seg}
+                        </Link>
+                      </Fragment>
+                    )
+                  })}
+                </div>
+              ) : null}
 
-            <div className="flex flex-wrap items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
-              <div className="flex items-center gap-2 rounded-md border border-rs-border bg-rs-surface px-3 py-1.5 text-sm">
-                <GitFork className="size-3.5 text-muted-foreground" />
-                <select
-                  className="max-w-28 bg-transparent font-medium text-foreground outline-none cursor-pointer"
-                  value={branch}
-                  onChange={() => {}} // TODO: Branch switching
-                  aria-label="Branch"
-                >
-                  <option value={repo.defaultBranch} className="bg-[#111]">{repo.defaultBranch}</option>
-                </select>
-                <ChevronDown className="size-3.5 text-muted-foreground" />
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-rs-border bg-rs-surface px-3 text-muted-foreground hover:bg-[#212830]"
-                asChild
-              >
-                <Link to={`/${username}/${repoName}/commits`}>
-                  <History className="size-3.5" />
-                  {commitsLoading ? '...' : commits.length} commits
-                </Link>
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="ml-auto h-8 gap-1 border border-rs-border bg-[#238636] text-white hover:bg-[#2ea043]"
+              <div className="flex flex-wrap items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+                <div className="flex items-center gap-2 rounded-md border border-rs-border bg-rs-surface px-3 py-1.5 text-sm">
+                  <GitFork className="size-3.5 text-muted-foreground" />
+                  <select
+                    className="max-w-28 bg-transparent font-medium text-foreground outline-none cursor-pointer"
+                    value={branch}
+                    onChange={() => {}} // TODO: Branch switching
+                    aria-label="Branch"
                   >
-                    Code
-                    <ChevronDown className="size-3.5 opacity-90" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 border-rs-border bg-rs-surface p-3 text-white">
-                  <p className="text-xs font-medium text-muted-foreground">Clone with rs</p>
-                  <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
-                    rs clone {repoPath}
-                  </pre>
-                  <p className="mt-3 text-xs font-medium text-muted-foreground">HTTPS (placeholder)</p>
-                  <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
-                    https://reposphere.dev/{repoPath}.git
-                  </pre>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                    <option value={repo.defaultBranch} className="bg-[#111]">{repo.defaultBranch}</option>
+                  </select>
+                  <ChevronDown className="size-3.5 text-muted-foreground" />
+                </div>
 
-            {latest ? (
-              <div className="flex flex-wrap items-center gap-3 border-b border-rs-border bg-[#161b22] px-4 py-3 text-sm">
-                <Avatar className="size-5 shrink-0 rounded-full">
-                  <AvatarFallback className="rounded-full bg-[#1f6feb] text-[10px] text-white">
-                    {latest.author[0]?.toUpperCase() ?? '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <span className="font-semibold text-foreground text-white">{latest.author}</span>
-                  <span className="mx-2 text-muted-foreground">·</span>
-                  <span className="text-muted-foreground">{latest.message}</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Link to={`/${username}/${repoName}/commit/${latest.hash}`} className="font-mono text-rs-link hover:underline">
-                    {truncateHash(latest.hash)}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-rs-border bg-rs-surface px-3 text-muted-foreground hover:bg-[#212830]"
+                  asChild
+                >
+                  <Link to={`/${username}/${repoName}/commits`}>
+                    <History className="size-3.5" />
+                    {commitsLoading ? '...' : commits.length} commits
                   </Link>
-                  <span>{formatRelativeTime(latest.timestamp)}</span>
-                </div>
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="ml-auto h-8 gap-1 border border-rs-border bg-[#238636] text-white hover:bg-[#2ea043]"
+                    >
+                      Code
+                      <ChevronDown className="size-3.5 opacity-90" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 border-rs-border bg-rs-surface p-3 text-white">
+                    <p className="text-xs font-medium text-muted-foreground">Clone with rs</p>
+                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
+                      rs clone {repoPath}
+                    </pre>
+                    <p className="mt-3 text-xs font-medium text-muted-foreground">HTTPS (placeholder)</p>
+                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
+                      https://reposphere.dev/{repoPath}.git
+                    </pre>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            ) : null}
 
-            {isBlob ? (
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rs-border bg-[#0d1117] px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
-                    <div>
-                      <p className="font-mono text-sm text-foreground text-white">{treePathInRepo}</p>
-                      <p className="text-xs text-muted-foreground">{blobLoading ? 'Loading...' : `${fileLines.length} lines`}</p>
-                    </div>
+              {latest ? (
+                <div className="flex flex-wrap items-center gap-3 border-b border-rs-border bg-[#161b22] px-4 py-3 text-sm">
+                  <Avatar className="size-5 shrink-0 rounded-full">
+                    <AvatarFallback className="rounded-full bg-[#1f6feb] text-[10px] text-white">
+                      {latest.author[0]?.toUpperCase() ?? '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-semibold text-foreground text-white">{latest.author}</span>
+                    <span className="mx-2 text-muted-foreground">·</span>
+                    <span className="text-muted-foreground">{latest.message}</span>
                   </div>
-                  <Link to={repoTreeUrl(username, repoName, branch, treePathInRepo.split('/').slice(0, -1).join('/'))} className="text-sm text-rs-link hover:underline">
-                    Browse folder
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <Link to={`/${username}/${repoName}/commit/${latest.hash}`} className="font-mono text-rs-link hover:underline">
+                      {truncateHash(latest.hash)}
+                    </Link>
+                    <span>{formatRelativeTime(latest.timestamp)}</span>
+                  </div>
                 </div>
+              ) : null}
 
-                <div className="max-h-[min(70vh,36rem)] overflow-auto bg-[#0d1117]">
-                  {blobLoading ? (
+              {isBlob ? (
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
+                      <div>
+                        <p className="font-mono text-sm text-foreground text-white">{treePathInRepo}</p>
+                        <p className="text-xs text-muted-foreground">{blobLoading ? 'Loading...' : `${fileLines.length} lines`}</p>
+                      </div>
+                    </div>
+                    <Link to={repoTreeUrl(username, repoName, branch, treePathInRepo.split('/').slice(0, -1).join('/'))} className="text-sm text-rs-link hover:underline">
+                      Browse folder
+                    </Link>
+                  </div>
+
+                  <div className="max-h-[min(70vh,36rem)] overflow-auto bg-[#0d1117]">
+                    {blobLoading ? (
+                      <div className="p-8 flex justify-center">
+                        <Loader2 className="animate-spin size-8 text-blue-500" />
+                      </div>
+                    ) : (
+                      <table className="w-full border-collapse font-mono text-sm leading-6">
+                        <tbody>
+                          {highlightedLines.map((line) => (
+                            <tr key={line.number} className="border-b border-[#21262d]/70 last:border-b-0">
+                              <td className="w-14 select-none border-r border-rs-border px-3 text-right align-top text-xs text-muted-foreground">
+                                {line.number}
+                              </td>
+                              <td className="px-4 py-0.5 text-foreground">
+                                <span 
+                                  className="whitespace-pre text-gray-300"
+                                  dangerouslySetInnerHTML={{ __html: line.html || '&nbsp;' }}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-0">
+                  {treeLoading ? (
                     <div className="p-8 flex justify-center">
                       <Loader2 className="animate-spin size-8 text-blue-500" />
                     </div>
                   ) : (
-                    <table className="w-full border-collapse font-mono text-sm leading-6">
-                      <tbody>
-                        {highlightedLines.map((line) => (
-                          <tr key={line.number} className="border-b border-[#21262d]/70 last:border-b-0">
-                            <td className="w-14 select-none border-r border-rs-border px-3 text-right align-top text-xs text-muted-foreground">
-                              {line.number}
-                            </td>
-                            <td className="px-4 py-0.5 text-foreground">
-                              <span 
-                                className="whitespace-pre text-gray-300"
-                                dangerouslySetInnerHTML={{ __html: line.html || '&nbsp;' }}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <RepositoryEntries entries={tree} linkContext={linkContext} pathPrefix={treePathInRepo} />
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="p-0">
-                {treeLoading ? (
-                  <div className="p-8 flex justify-center">
-                    <Loader2 className="animate-spin size-8 text-blue-500" />
-                  </div>
-                ) : (
-                  <RepositoryEntries entries={tree} linkContext={linkContext} pathPrefix={treePathInRepo} />
-                )}
-              </div>
-            )}
+              )}
 
-            {showReadme ? (
-              <div className="border-t border-rs-border">
-                <div className="flex items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
-                  <Book className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold text-white">README.md</span>
+              {showReadme ? (
+                <div className="border-t border-rs-border">
+                  <div className="flex items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+                    <Book className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-white">README.md</span>
+                  </div>
+                  <div className="bg-rs-surface px-6 py-6">
+                    <ReadmeMarkdown source={repo.description || '# README\n\n_No description for this repository._'} />
+                  </div>
                 </div>
-                <div className="bg-rs-surface px-6 py-6">
-                  <ReadmeMarkdown source={repo.description || '# README\n\n_No description for this repository._'} />
-                </div>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          )}
         </section>
 
-        <aside className="space-y-6 text-sm">
-          <section>
-            <h2 className="mb-2 text-base font-semibold text-white">About</h2>
-            <p className={cn('text-muted-foreground', !repo.description?.trim() && 'italic')}>
-              {repo.description?.trim() || 'No description, website, or topics provided.'}
-            </p>
-            <ul className="mt-3 space-y-2">
-              <li className="inline-flex items-center gap-2 text-muted-foreground">
-                <Circle className="size-2 fill-current text-[#f1e05a]" />
-                {repo.language || 'Plain Text'}
-              </li>
-              <li>
-                <a href="#" className="text-rs-link hover:underline">
-                  Activity
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-rs-link hover:underline">
-                  {repo.stars} stars
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-rs-link hover:underline">
-                  0 watching
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-rs-link hover:underline">
-                  {repo.forks} forks
-                </a>
-              </li>
-              <li className="inline-flex items-center gap-2 text-muted-foreground">
-                <Scale className="size-4" />
-                No license
-              </li>
-            </ul>
-          </section>
+        {!isCommitsTab && (
+          <aside className="space-y-6 text-sm">
+            <section>
+              <h2 className="mb-2 text-base font-semibold text-white">About</h2>
+              <p className={cn('text-muted-foreground', !repo.description?.trim() && 'italic')}>
+                {repo.description?.trim() || 'No description, website, or topics provided.'}
+              </p>
+              <ul className="mt-3 space-y-2">
+                <li className="inline-flex items-center gap-2 text-muted-foreground">
+                  <Circle className="size-2 fill-current text-[#f1e05a]" />
+                  {repo.language || 'Plain Text'}
+                </li>
+                <li>
+                  <a href="#" className="text-rs-link hover:underline">
+                    Activity
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-rs-link hover:underline">
+                    {repo.stars} stars
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-rs-link hover:underline">
+                    0 watching
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-rs-link hover:underline">
+                    {repo.forks} forks
+                  </a>
+                </li>
+                <li className="inline-flex items-center gap-2 text-muted-foreground">
+                  <Scale className="size-4" />
+                  No license
+                </li>
+              </ul>
+            </section>
 
-          <Separator className="bg-rs-border" />
+            <Separator className="bg-rs-border" />
 
-          <section>
-            <h2 className="mb-2 text-base font-semibold text-white">Releases</h2>
-            <p className="text-muted-foreground text-xs font-mono">Coming soon...</p>
-          </section>
+            <section>
+              <h2 className="mb-2 text-base font-semibold text-white">Releases</h2>
+              <p className="text-muted-foreground text-xs font-mono">Coming soon...</p>
+            </section>
 
-          <Separator className="bg-rs-border" />
+            <Separator className="bg-rs-border" />
 
-          <section>
-            <h2 className="mb-2 text-base font-semibold text-white">Packages</h2>
-            <p className="text-muted-foreground text-xs font-mono">Coming soon...</p>
-          </section>
+            <section>
+              <h2 className="mb-2 text-base font-semibold text-white">Packages</h2>
+              <p className="text-muted-foreground text-xs font-mono">Coming soon...</p>
+            </section>
 
-          <Separator className="bg-rs-border" />
+            <Separator className="bg-rs-border" />
 
-          <section>
-            <h2 className="mb-2 text-base font-semibold text-white">Contributors</h2>
-            <div className="flex gap-1">
-              <Avatar className="size-8 border border-rs-border">
-                <AvatarFallback className="bg-rs-accent text-[10px] text-white">{username[0]?.toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </div>
-          </section>
-        </aside>
+            <section>
+              <h2 className="mb-2 text-base font-semibold text-white">Contributors</h2>
+              <div className="flex gap-1">
+                <Avatar className="size-8 border border-rs-border">
+                  <AvatarFallback className="bg-rs-accent text-[10px] text-white">{username[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </div>
+            </section>
+          </aside>
+        )}
       </div>
     </div>
   )

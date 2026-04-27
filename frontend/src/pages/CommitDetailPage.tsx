@@ -54,9 +54,16 @@ export function CommitDetailPage() {
       <header className="rounded-lg border border-rs-border bg-rs-surface overflow-hidden shadow-sm">
         <div className="bg-rs-bg/50 px-6 py-4 border-b border-rs-border">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" asChild className="shrink-0 -ml-2 text-muted-foreground hover:text-white">
+                <Link to={`/${username}/${repoName}`} title="Back to repository">
+                  <ChevronLeft className="size-6" />
+                </Link>
+              </Button>
+              <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
+            </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent" asChild>
+              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent hover:bg-rs-surface/50" asChild>
                 <Link to={`/${username}/${repoName}/tree/${commit.hash}`}>
                   Browse files
                 </Link>
