@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { CircleDot, CheckCircle2, MessageSquare, Trash2 } from 'lucide-react'
+import { CircleDot, CheckCircle2, Trash2 } from 'lucide-react'
 import { useIssue, useUpdateIssue, useDeleteIssue, useAddComment } from '@/hooks/useIssues'
-import { useRepository } from '@/hooks/useRepository'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,8 +15,6 @@ export function IssueDetail({ username, repoName, issueNumber }: { username: str
   const navigate = useNavigate()
   const currentUser = useAuthStore(s => s.user)
   
-  const { data: repoRes } = useRepository(username!, repoName!)
-  const repo = repoRes?.success ? repoRes.data : null
   const isRepoOwner = currentUser?.username === username
 
   const { data: issueRes, isLoading } = useIssue(username!, repoName!, Number(issueNumber))

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ChevronLeft, Info, Loader2, Settings as SettingsIcon, Shield, Trash2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { AlertTriangle, Info, Loader2, Shield, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Card,

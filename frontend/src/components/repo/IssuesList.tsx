@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CircleDot, CheckCircle2, MessageSquare, Plus, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Tag } from 'lucide-react'
 import { useIssues } from '@/hooks/useIssues'
 import { useAuthStore } from '@/stores/authStore'
