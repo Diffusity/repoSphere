@@ -21,16 +21,32 @@ type Commit struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-const (
-	parentFilePath    = ".rs/refs/heads/master"
-	parentLogFilePath = ".rs/logs/refs/heads/master"
-)
+// getParentFilePath returns the ref file path for the current branch.
+func getParentFilePath() string {
+	branch, err := utils.GetBranch()
+	if err != nil {
+		return filepath.Join(".rs", "refs", "heads", "master") // Fallback
+	}
+	return filepath.Join(".rs", "refs", "heads", branch)
+}
+
+// getParentLogFilePath returns the log file path for the current branch.
+func getParentLogFilePath() string {
+	branch, err := utils.GetBranch()
+	if err != nil {
+		return filepath.Join(".rs", "logs", "refs", "heads", "master") // Fallback
+	}
+	return filepath.Join(".rs", "logs", "refs", "heads", branch)
+}
 
 func CreateCommit(message string) (string, error) {
 	stagedTreeHash, err := repo.BuildTreeFromStage()
 	if err != nil {
 		return "", err
 	}
+
+	parentFilePath := getParentFilePath()
+	parentLogFilePath := getParentLogFilePath()
 
 	parentFile, _ := os.ReadFile(parentFilePath)
 	parentLogFile, _ := os.ReadFile(parentLogFilePath)
@@ -64,7 +80,7 @@ func CreateCommit(message string) (string, error) {
 		return "", err
 	}
 
-	err = os.WriteFile(".rs/refs/heads/master", []byte(commitHash), 0644)
+	err = os.WriteFile(parentFilePath, []byte(commitHash), 0644)
 	if err != nil {
 		return "", err
 	}
