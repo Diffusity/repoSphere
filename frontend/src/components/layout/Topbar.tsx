@@ -1,4 +1,4 @@
-import { Bell, Search } from 'lucide-react'
+import { Bell} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useAuthStore } from '@/stores/authStore'
 
