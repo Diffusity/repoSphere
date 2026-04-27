@@ -131,7 +131,7 @@ export function RepositoryPage() {
   const linkContext = { username, repoName, branch }
 
   return (
-    <div className="mx-auto max-w-[1280px] space-y-5 px-4 lg:px-0">
+    <div className="app-page max-w-[1280px]">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -156,7 +156,7 @@ export function RepositoryPage() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>{repo.description?.trim() || 'No description provided.'}</span>
             <span className="inline-flex items-center gap-1.5">
-              <Circle className="size-2 fill-current text-[#f1e05a]" />
+              <Circle className="size-2 fill-current text-rs-warm" />
               {repo.language || 'Plain Text'}
             </span>
             <span>Updated {formatRelativeTime(repo.updatedAt)}</span>
@@ -195,9 +195,9 @@ export function RepositoryPage() {
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
           ) : (
-            <div className="overflow-hidden rounded-md border border-rs-border bg-rs-surface shadow-[0_0_0_1px_rgba(48,54,61,0.18)]">
+            <div className="surface-panel overflow-hidden">
               {isObjectRoute ? (
-                <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-rs-border bg-[#0d1117] px-4 py-2 text-sm text-muted-foreground">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 border-b border-rs-border bg-rs-bg/50 px-4 py-2 text-sm text-muted-foreground">
                   <Link to={`/${username}/${repoName}`} className="shrink-0 font-semibold text-foreground hover:text-rs-link">
                     {repoName}
                   </Link>
@@ -226,7 +226,7 @@ export function RepositoryPage() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 border-b border-rs-border bg-rs-bg/50 px-4 py-3">
                 <div className="flex items-center gap-2 rounded-md border border-rs-border bg-rs-surface px-3 py-1.5 text-sm">
                   <GitFork className="size-3.5 text-muted-foreground" />
                   <select
@@ -235,7 +235,7 @@ export function RepositoryPage() {
                     onChange={() => {}} // TODO: Branch switching
                     aria-label="Branch"
                   >
-                    <option value={repo.defaultBranch} className="bg-[#111]">{repo.defaultBranch}</option>
+                    <option value={repo.defaultBranch} className="bg-rs-surface">{repo.defaultBranch}</option>
                   </select>
                   <ChevronDown className="size-3.5 text-muted-foreground" />
                 </div>
@@ -243,7 +243,7 @@ export function RepositoryPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-rs-border bg-rs-surface px-3 text-muted-foreground hover:bg-[#212830]"
+                  className="h-8 border-rs-border bg-rs-surface px-3 text-muted-foreground"
                   asChild
                 >
                   <Link to={`/${username}/${repoName}/commits`}>
@@ -256,7 +256,7 @@ export function RepositoryPage() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       size="sm"
-                      className="ml-auto h-8 gap-1 border border-rs-border bg-[#238636] text-white hover:bg-[#2ea043]"
+                      className="ml-auto h-8 gap-1 border border-rs-border bg-primary text-primary-foreground hover:bg-primary/90"
                     >
                       Code
                       <ChevronDown className="size-3.5 opacity-90" />
@@ -264,26 +264,26 @@ export function RepositoryPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-80 border-rs-border bg-rs-surface p-3 text-white">
                     <p className="text-xs font-medium text-muted-foreground">Clone with rs</p>
-                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
+                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-rs-bg/70 p-2 font-mono text-xs text-foreground">
                       rs clone {repoPath}
                     </pre>
                     <p className="mt-3 text-xs font-medium text-muted-foreground">HTTPS (placeholder)</p>
-                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-black/50 p-2 font-mono text-xs text-foreground">
-                      https://reposphere.dev/{repoPath}.git
+                    <pre className="mt-2 overflow-x-auto rounded-md border border-rs-border bg-rs-bg/70 p-2 font-mono text-xs text-foreground">
+                      https://reposphere.vercel.app/{repoPath}
                     </pre>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
               {latest ? (
-                <div className="flex flex-wrap items-center gap-3 border-b border-rs-border bg-[#161b22] px-4 py-3 text-sm">
+                <div className="flex flex-wrap items-center gap-3 border-b border-rs-border bg-rs-surface/80 px-4 py-3 text-sm">
                   <Avatar className="size-5 shrink-0 rounded-full">
-                    <AvatarFallback className="rounded-full bg-[#1f6feb] text-[10px] text-white">
+                    <AvatarFallback className="rounded-full bg-rs-link text-[10px] text-white">
                       {latest.author[0]?.toUpperCase() ?? '?'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <span className="font-semibold text-foreground text-white">{latest.author}</span>
+                    <span className="font-semibold text-foreground">{latest.author}</span>
                     <span className="mx-2 text-muted-foreground">·</span>
                     <span className="text-muted-foreground">{latest.message}</span>
                   </div>
@@ -298,11 +298,11 @@ export function RepositoryPage() {
 
               {isBlob ? (
                 <div>
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rs-border bg-rs-bg/50 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
                       <div>
-                        <p className="font-mono text-sm text-foreground text-white">{treePathInRepo}</p>
+                        <p className="font-mono text-sm text-foreground">{treePathInRepo}</p>
                         <p className="text-xs text-muted-foreground">{blobLoading ? 'Loading...' : `${fileLines.length} lines`}</p>
                       </div>
                     </div>
@@ -311,7 +311,7 @@ export function RepositoryPage() {
                     </Link>
                   </div>
 
-                  <div className="max-h-[min(70vh,36rem)] overflow-auto bg-[#0d1117]">
+                  <div className="max-h-[min(70vh,36rem)] overflow-auto bg-rs-bg/70">
                     {blobLoading ? (
                       <div className="p-8 flex justify-center">
                         <Loader2 className="animate-spin size-8 text-blue-500" />
@@ -320,7 +320,7 @@ export function RepositoryPage() {
                       <table className="w-full border-collapse font-mono text-sm leading-6">
                         <tbody>
                           {highlightedLines.map((line) => (
-                            <tr key={line.number} className="border-b border-[#21262d]/70 last:border-b-0">
+                            <tr key={line.number} className="border-b border-rs-border/70 last:border-b-0">
                               <td className="w-14 select-none border-r border-rs-border px-3 text-right align-top text-xs text-muted-foreground">
                                 {line.number}
                               </td>
@@ -351,7 +351,7 @@ export function RepositoryPage() {
 
               {showReadme ? (
                 <div className="border-t border-rs-border">
-                  <div className="flex items-center gap-2 border-b border-rs-border bg-[#0d1117] px-4 py-3">
+                  <div className="flex items-center gap-2 border-b border-rs-border bg-rs-bg/50 px-4 py-3">
                     <Book className="size-4 text-muted-foreground" />
                     <span className="text-sm font-semibold text-white">README.md</span>
                   </div>
@@ -373,7 +373,7 @@ export function RepositoryPage() {
               </p>
               <ul className="mt-3 space-y-2">
                 <li className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Circle className="size-2 fill-current text-[#f1e05a]" />
+                  <Circle className="size-2 fill-current text-rs-warm" />
                   {repo.language || 'Plain Text'}
                 </li>
                 <li>
@@ -444,7 +444,7 @@ function RepoActionButton({
   value: string
 }) {
   return (
-    <Button variant="outline" size="sm" className="gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]">
+    <Button variant="outline" size="sm" className="gap-1 border-rs-border bg-rs-surface text-muted-foreground">
       <Icon className="size-3.5" />
       {label} <span className="tabular-nums text-foreground">{value}</span>
       <ChevronDown className="size-3.5 opacity-70" />
@@ -507,7 +507,7 @@ function ReadmeMarkdown({ source }: { source: string }) {
         {blocks.map((block, i) => {
           if (i % 2 === 1) {
             return (
-              <pre key={i} className="overflow-x-auto rounded-md border border-rs-border bg-[#0d1117] p-4 font-mono text-xs text-foreground">
+              <pre key={i} className="overflow-x-auto rounded-md border border-rs-border bg-rs-bg/70 p-4 font-mono text-xs text-foreground">
                 {block.replace(/^\w*\n/, '')}
               </pre>
             )

@@ -70,6 +70,7 @@ export interface Repository {
 }
 
 export interface Commit extends CommitSummary {
+  description?: string
   parent: string
   authorEmail: string
   filesChanged: { path: string; status: 'added' | 'modified' | 'deleted' }[]

@@ -10,29 +10,31 @@
   --font-mono:
     'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
 
-  --color-rs-bg: #0d1117;
-  --color-rs-surface: #161b22;
-  --color-rs-elevated: #21262d;
-  --color-rs-border: #30363d;
-  --color-rs-accent: #238636;
+  --color-rs-bg: #0b1020;
+  --color-rs-surface: #111827;
+  --color-rs-elevated: #1b2433;
+  --color-rs-border: #263244;
+  --color-rs-accent: #2fbd67;
   --color-rs-danger: #da3633;
-  --color-rs-muted: #8b949e;
-  --color-rs-link: #58a6ff;
+  --color-rs-muted: #94a3b8;
+  --color-rs-link: #6cb6ff;
+  --color-rs-warm: #f59e0b;
+  --color-rs-violet: #a78bfa;
 
   --color-background: var(--color-rs-bg);
-  --color-foreground: #f0f6fc;
+  --color-foreground: #f8fafc;
   --color-card: var(--color-rs-surface);
-  --color-card-foreground: #f0f6fc;
+  --color-card-foreground: #f8fafc;
   --color-popover: var(--color-rs-surface);
-  --color-popover-foreground: #f0f6fc;
-  --color-primary: #f0f6fc;
-  --color-primary-foreground: #0d1117;
+  --color-popover-foreground: #f8fafc;
+  --color-primary: #35c46f;
+  --color-primary-foreground: #07130d;
   --color-secondary: var(--color-rs-elevated);
-  --color-secondary-foreground: #f0f6fc;
+  --color-secondary-foreground: #e5edf8;
   --color-muted: var(--color-rs-elevated);
   --color-muted-foreground: var(--color-rs-muted);
   --color-accent: var(--color-rs-elevated);
-  --color-accent-foreground: #f0f6fc;
+  --color-accent-foreground: #f8fafc;
   --color-destructive: var(--color-rs-danger);
   --color-border: var(--color-rs-border);
   --color-input: var(--color-rs-border);
@@ -54,7 +56,88 @@
     @apply min-h-screen bg-background font-sans text-foreground;
   }
 
+  body {
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.86) 0%, rgba(11, 16, 32, 1) 40%),
+      radial-gradient(circle at 12% 0%, rgba(47, 189, 103, 0.1), transparent 28%),
+      radial-gradient(circle at 90% 8%, rgba(108, 182, 255, 0.09), transparent 30%),
+      var(--color-rs-bg);
+  }
+
   #root {
     @apply w-full max-w-none text-left;
   }
+
+  ::selection {
+    @apply bg-rs-link/30 text-white;
+  }
+}
+
+@layer components {
+  .app-page {
+    @apply mx-auto w-full max-w-6xl space-y-6;
+  }
+
+  .page-heading {
+    @apply space-y-1;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-foreground md:text-3xl;
+  }
+
+  .page-subtitle {
+    @apply max-w-2xl text-sm leading-6 text-muted-foreground;
+  }
+
+  .surface-panel {
+    @apply rounded-lg border border-rs-border/80 bg-rs-surface/80 shadow-sm shadow-black/20;
+  }
+
+  .interactive-panel {
+    @apply rounded-lg border border-rs-border/80 bg-rs-surface/80 shadow-sm shadow-black/20 transition hover:border-rs-link/45 hover:bg-rs-elevated/70;
+  }
+
+  .subtle-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, black, transparent 82%);
+  }
+}
+
+/* ── terminal demo animations ────────────────────────────── */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out both;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.3);
 }

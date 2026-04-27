@@ -1,14 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
+import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
+import { RepoCard } from '@/components/common/RepoCard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RepoCard } from '@/components/common/RepoCard'
-import { useRepositories } from '@/hooks/useRepositories'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useRepositories } from '@/hooks/useRepositories'
 import { useUserContributions } from '@/hooks/useRepository'
+import { useAuthStore } from '@/stores/authStore'
 
 export function ProfilePage() {
   const { username = '' } = useParams()
@@ -17,55 +17,46 @@ export function ProfilePage() {
   const { repositories, isLoading } = useRepositories(username)
   const { data: contributions, isLoading: isLoadingContributions } = useUserContributions(username)
 
-  const isYou = userLoaded && (
-    user?.username === username ||
-    user?.email.split('@')[0] === username
-  )
-  
-  const displayName = isYou ? (user?.name || username) : username
+  const isYou = userLoaded && (user?.username === username || user?.email.split('@')[0] === username)
+  const displayName = isYou ? user?.name || username : username
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 lg:px-0">
-      <div className="flex flex-wrap items-start gap-6">
-        <Avatar className="size-24 border border-rs-border bg-rs-surface">
-          <AvatarImage src={isYou ? user?.imageUrl ?? undefined : undefined} />
-          <AvatarFallback className="text-2xl text-white bg-rs-accent">
-            {username[0]?.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-          <p className="text-muted-foreground">@{username}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="secondary" className="bg-rs-surface border-rs-border text-muted-foreground">
-              {isLoading ? '...' : repositories.length} repositories
-            </Badge>
-            {isYou && <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20">It’s you</Badge>}
+    <div className="app-page max-w-5xl">
+      <section className="surface-panel p-5">
+        <div className="flex flex-wrap items-start gap-5">
+          <Avatar className="size-24 border border-rs-border bg-rs-elevated">
+            <AvatarImage src={isYou ? user?.imageUrl ?? undefined : undefined} />
+            <AvatarFallback className="bg-rs-elevated text-2xl font-semibold text-white">
+              {username[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1 space-y-2">
+            <h1 className="page-title">{displayName}</h1>
+            <p className="text-muted-foreground">@{username}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">{isLoading ? '...' : repositories.length} repositories</Badge>
+              {isYou ? <Badge className="border-rs-link/30 bg-rs-link/10 text-rs-link">It is you</Badge> : null}
+            </div>
           </div>
         </div>
-      </div>
-
-      <section className="pt-2 pb-2">
-        <ContributionHeatmap 
-          data={contributions?.data} 
-          isLoading={isLoadingContributions} 
-        />
       </section>
 
-      <Separator />
+      <ContributionHeatmap data={contributions?.data} isLoading={isLoadingContributions} />
 
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Repositories</h2>
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-white">Repositories</h2>
         </div>
-        
+
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-40 w-full rounded-lg" />
+            ))}
           </div>
         ) : repositories.length === 0 ? (
-          <Card className="border-dashed border-rs-border bg-rs-surface/30">
-            <CardHeader className="text-center py-12">
+          <Card className="border-dashed border-rs-border bg-rs-surface/70">
+            <CardHeader className="py-12 text-center">
               <CardTitle className="text-base text-muted-foreground">No repositories</CardTitle>
               <CardDescription>This user has no visible repositories yet.</CardDescription>
             </CardHeader>
@@ -79,17 +70,13 @@ export function ProfilePage() {
         )}
       </section>
 
-      {isYou && (
-        <div className="pt-6 border-t border-rs-border">
-          <Button variant="link" className="p-0 text-rs-link h-auto" asChild>
-            <Link to="/settings">Manage account settings →</Link>
+      {isYou ? (
+        <div className="border-t border-rs-border pt-6">
+          <Button variant="link" className="h-auto p-0 text-rs-link" asChild>
+            <Link to="/settings">Manage account settings</Link>
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   )
-}
-
-function Separator() {
-  return <div className="h-px w-full bg-rs-border" />
 }

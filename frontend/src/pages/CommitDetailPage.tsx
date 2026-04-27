@@ -43,7 +43,7 @@ export function CommitDetailPage() {
   const del = diffs.reduce((s, f) => s + f.deletions, 0)
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 lg:px-0">
+    <div className="app-page max-w-5xl">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link to={`/${username}/${repoName}/commits`} className="flex items-center gap-1 hover:text-rs-link">
           <ChevronLeft className="size-4" />
@@ -51,8 +51,8 @@ export function CommitDetailPage() {
         </Link>
       </div>
 
-      <header className="rounded-lg border border-rs-border bg-rs-surface overflow-hidden shadow-sm">
-        <div className="bg-rs-bg/50 px-6 py-4 border-b border-rs-border">
+      <header className="surface-panel overflow-hidden">
+        <div className="border-b border-rs-border bg-rs-bg/45 px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" asChild className="shrink-0 -ml-2 text-muted-foreground hover:text-white">
@@ -63,7 +63,7 @@ export function CommitDetailPage() {
               <h1 className="text-xl font-semibold text-white">{commit.message}</h1>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden border-rs-border font-mono text-xs sm:flex h-8 bg-transparent hover:bg-rs-surface/50" asChild>
+              <Button variant="outline" size="sm" className="hidden h-8 border-rs-border bg-transparent font-mono text-xs sm:flex" asChild>
                 <Link to={`/${username}/${repoName}/tree/${commit.hash}`}>
                   Browse files
                 </Link>
@@ -105,13 +105,13 @@ export function CommitDetailPage() {
         <h2 className="text-sm font-medium text-muted-foreground">
           Showing {nFiles} changed file{nFiles === 1 ? '' : 's'} with{' '}
           <span className="text-emerald-400 font-semibold">+{add} additions</span> and{' '}
-          <span className="text-red-400 font-semibold">−{del} deletions</span>
+          <span className="font-semibold text-red-400">-{del} deletions</span>
         </h2>
       </div>
 
       {diffLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 border border-rs-border rounded-lg bg-rs-surface">
-          <Loader2 className="size-10 animate-spin text-rs-link mb-4" />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-rs-border bg-rs-surface py-20">
+          <Loader2 className="mb-4 size-10 animate-spin text-rs-link" />
           <p className="text-muted-foreground">Loading diffs...</p>
         </div>
       ) : (

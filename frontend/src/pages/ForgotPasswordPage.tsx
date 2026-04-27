@@ -1,5 +1,5 @@
 import { ArrowRight, Loader2, Mail } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { forgotPassword } from '@/api/auth'
 import { useApiClient } from '@/api/client'
@@ -20,7 +20,7 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -90,7 +90,7 @@ export function ForgotPasswordPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+              className="h-12 rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
               onClick={() => {
                 setSubmitted(false)
                 setError(null)

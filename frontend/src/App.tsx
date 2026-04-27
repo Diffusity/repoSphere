@@ -17,6 +17,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { TerminalAuthPage } from '@/pages/TerminalAuthPage'
+import { CLIDemoPage } from '@/pages/CLIDemoPage'
 import { SetupUsernamePage } from '@/pages/SetupUsernamePage'
 import { VerifyEmailPage } from '@/pages/VerifyEmailPage'
 import { takePostLoginRedirect } from '@/lib/authRedirect'
@@ -53,6 +54,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/setup-username" element={<SetupUsernamePage />} />
       <Route path="/terminal" element={<TerminalAuthPage />} />
+      <Route path="/cli-demo" element={<CLIDemoPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>

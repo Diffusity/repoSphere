@@ -32,7 +32,7 @@ export function RepositoryEntries({ entries, className, linkContext, pathPrefix 
   })
 
   return (
-    <ul className={cn('overflow-hidden rounded-md border border-rs-border text-sm', className)}>
+    <ul className={cn('overflow-hidden rounded-lg border border-rs-border/80 text-sm', className)}>
       {sortedEntries.map((entry) => {
         const relativePath = pathPrefix ? `${pathPrefix}/${entry.name}` : entry.name
         const isDir = entry.type === 'directory'
@@ -45,7 +45,7 @@ export function RepositoryEntries({ entries, className, linkContext, pathPrefix 
           <li key={entry.name} className="border-b border-rs-border last:border-b-0">
             <Link
               to={href}
-              className="grid min-h-11 grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_auto] items-center gap-3 bg-rs-surface px-4 py-2.5 transition-colors hover:bg-[#1a2029]"
+              className="grid min-h-11 grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_auto] items-center gap-3 bg-rs-surface/70 px-4 py-2.5 transition-colors hover:bg-rs-elevated/70"
             >
               <div className="flex min-w-0 items-center gap-2">
                 {isDir ? (

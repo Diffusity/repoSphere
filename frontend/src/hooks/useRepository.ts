@@ -14,6 +14,14 @@ import {
   confirmDeleteRepository
 } from '@/api/repo'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Repository } from '@/types'
+
+type UpdateRepositoryPayload = {
+  name?: string
+  description?: string
+  visibility?: Repository['visibility']
+  default_branch?: string
+}
 
 export function useRepository(owner: string, name: string) {
   const client = useApiClient()
@@ -117,7 +125,7 @@ export function useUpdateRepository() {
     }: { 
       owner: string; 
       name: string; 
-      payload: any 
+      payload: UpdateRepositoryPayload
     }) => updateRepository(client, owner, name, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repository', variables.owner, variables.name] })

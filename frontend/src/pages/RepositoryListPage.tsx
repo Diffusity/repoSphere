@@ -1,7 +1,9 @@
 import * as React from 'react'
-import { FolderGit2, Plus, Search, Loader2 } from 'lucide-react'
+import { FolderGit2, Loader2, Plus, Search } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useApiClient } from '@/api/client'
+import { createRepository } from '@/api/repo'
 import { RepoCard } from '@/components/common/RepoCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,8 +19,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRepositories } from '@/hooks/useRepositories'
-import { useApiClient } from '@/api/client'
-import { createRepository } from '@/api/repo'
 import { useAuthStore } from '@/stores/authStore'
 import type { Repository } from '@/types'
 
@@ -35,7 +35,7 @@ export function RepositoryListPage() {
   }, [repositories])
 
   const filtered = React.useMemo(() => {
-    let list = repositories.filter((r) => {
+    const list = repositories.filter((r) => {
       const matchesQ =
         !q ||
         r.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -43,29 +43,29 @@ export function RepositoryListPage() {
       const matchesLang = lang === 'all' || r.language === lang
       return matchesQ && matchesLang
     })
-    list = [...list].sort((a, b) => {
+
+    return [...list].sort((a, b) => {
       if (sort === 'name') return a.name.localeCompare(b.name)
       if (sort === 'stars') return b.stars - a.stars
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     })
-    return list
   }, [repositories, q, lang, sort])
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="app-page">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Repositories</h1>
-          <p className="text-sm text-muted-foreground">Manage your code and collaborations.</p>
+        <div className="page-heading">
+          <h1 className="page-title">Repositories</h1>
+          <p className="page-subtitle">Manage your code and collaborations.</p>
         </div>
         <NewRepoDialog />
       </div>
 
-      <div className="flex flex-col gap-4 rounded-lg border border-rs-border bg-rs-surface p-4 md:flex-row md:items-center">
+      <div className="surface-panel flex flex-col gap-4 p-4 md:flex-row md:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Find a repository…"
+            placeholder="Find a repository..."
             className="pl-9"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -73,26 +73,32 @@ export function RepositoryListPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
+            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none focus:border-rs-link"
             value={lang}
             onChange={(e) => setLang(e.target.value as typeof lang)}
             aria-label="Filter by language"
           >
             {languages.map((l) => (
-              <option key={l} value={l} className="bg-[#111]">
+              <option key={l} value={l} className="bg-rs-surface">
                 {l === 'all' ? 'All languages' : l}
               </option>
             ))}
           </select>
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
+            className="h-10 rounded-md border border-input bg-rs-bg/35 px-3 text-sm text-white outline-none focus:border-rs-link"
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
             aria-label="Sort repositories"
           >
-            <option value="updated" className="bg-[#111]">Last updated</option>
-            <option value="stars" className="bg-[#111]">Stars</option>
-            <option value="name" className="bg-[#111]">Name</option>
+            <option value="updated" className="bg-rs-surface">
+              Last updated
+            </option>
+            <option value="stars" className="bg-rs-surface">
+              Stars
+            </option>
+            <option value="name" className="bg-rs-surface">
+              Name
+            </option>
           </select>
         </div>
       </div>
@@ -100,11 +106,11 @@ export function RepositoryListPage() {
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 rounded-lg border border-rs-border bg-rs-surface animate-pulse" />
+            <div key={i} className="h-40 animate-pulse rounded-lg border border-rs-border bg-rs-surface" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="border-dashed border-rs-border bg-rs-surface">
+        <Card className="border-dashed border-rs-border bg-rs-surface/70">
           <CardHeader className="flex flex-col items-center py-16 text-center">
             <FolderGit2 className="mb-4 size-16 text-muted-foreground/40" />
             <CardTitle>No repositories found</CardTitle>
@@ -127,7 +133,7 @@ function NewRepoDialog() {
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [isPrivate, setIsPrivate] = React.useState(false)
-  
+
   const client = useApiClient()
   const queryClient = useQueryClient()
 
@@ -140,11 +146,12 @@ function NewRepoDialog() {
         setOpen(false)
         setName('')
         setDescription('')
+        setIsPrivate(false)
       }
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.detail || 'Failed to create repository')
-    }
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, 'Failed to create repository'))
+    },
   })
 
   const handleCreate = () => {
@@ -166,48 +173,45 @@ function NewRepoDialog() {
       </DialogTrigger>
       <DialogContent className="border-rs-border bg-rs-surface text-white">
         <DialogHeader>
-          <DialogTitle>Create repository</DialogTitle>
+          <DialogTitle>Create Repository</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            A repository contains all your project's files and revision history.
+            A repository contains files and revision history.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="repo-name">Name</Label>
-            <Input 
-              id="repo-name" 
-              placeholder="my-repo" 
+            <Input
+              id="repo-name"
+              placeholder="my-repo"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-black/50 border-rs-border"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="repo-desc">Description (optional)</Label>
-            <Input 
-              id="repo-desc" 
-              placeholder="Short description" 
+            <Label htmlFor="repo-desc">Description</Label>
+            <Input
+              id="repo-desc"
+              placeholder="Short description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-black/50 border-rs-border"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <input 
-              type="checkbox" 
-              id="private" 
+          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-rs-border bg-rs-bg/35 px-3 py-2">
+            <input
+              type="checkbox"
               checked={isPrivate}
               onChange={(e) => setIsPrivate(e.target.checked)}
-              className="rounded border-rs-border bg-black/50" 
+              className="size-4 rounded border-rs-border bg-rs-bg"
             />
-            <Label htmlFor="private">Private</Label>
-          </div>
+            <span className="text-sm">Private repository</span>
+          </label>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={createMutation.isPending} className="border-rs-border">
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={createMutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={!name || createMutation.isPending} className="bg-blue-600 hover:bg-blue-500">
+          <Button onClick={handleCreate} disabled={!name || createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             Create repository
           </Button>
@@ -215,4 +219,16 @@ function NewRepoDialog() {
       </DialogContent>
     </Dialog>
   )
+}
+
+function getErrorMessage(err: unknown, fallback: string) {
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'response' in err &&
+    typeof (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail === 'string'
+  ) {
+    return (err as { response: { data: { detail: string } } }).response.data.detail
+  }
+  return fallback
 }

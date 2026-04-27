@@ -65,10 +65,10 @@ export function OTPInput({
             inputsRef.current[index] = el
           }}
           className={cn(
-            'h-12 w-11 rounded-2xl border bg-white/[0.04] text-center text-lg font-semibold text-white outline-none transition shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:h-14 sm:w-12',
+            'h-12 w-11 rounded-md border bg-rs-bg/45 text-center text-lg font-semibold text-white shadow-sm shadow-black/10 outline-none transition sm:h-14 sm:w-12',
             activeIndex === index
-              ? 'border-sky-300/70 ring-4 ring-sky-400/10'
-              : 'border-white/10 hover:border-slate-500/40',
+              ? 'border-rs-link ring-4 ring-rs-link/10'
+              : 'border-rs-border hover:border-rs-link/45',
             disabled ? 'cursor-not-allowed opacity-60' : ''
           )}
           inputMode="numeric"

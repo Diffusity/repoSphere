@@ -20,7 +20,7 @@ function CopyBlock({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      className="group relative w-full rounded-lg border border-rs-border bg-rs-bg px-4 py-3 text-left font-mono text-sm text-emerald-100 transition-colors hover:border-rs-link/50"
+      className="group relative w-full rounded-lg border border-rs-border bg-rs-bg/70 px-4 py-3 text-left font-mono text-sm text-emerald-100 transition-colors hover:border-rs-link/50"
     >
       <code className="block break-all">{text}</code>
       <span className="mt-2 block text-xs text-muted-foreground">
@@ -50,7 +50,7 @@ export function CLIAuthBridge() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-rs-border bg-rs-surface">
+      <Card className="surface-panel">
         <CardHeader>
           <CardTitle>CLI token</CardTitle>
           <CardDescription>
@@ -64,7 +64,7 @@ export function CLIAuthBridge() {
               {create.isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Generating…
+                  Generating...
                 </>
               ) : (
                 'Generate CLI token'
@@ -77,7 +77,7 @@ export function CLIAuthBridge() {
                   <p className="text-sm text-muted-foreground">Run in your terminal:</p>
                   <CopyBlock text={cmd} />
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-rs-border bg-rs-bg p-4">
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-rs-border bg-rs-bg/70 p-4">
                   <span className="text-xs text-muted-foreground">Scan token</span>
                   <QRCodeSVG value={token ?? ''} size={128} level="M" fgColor="#f0f6fc" bgColor="#0d1117" />
                   <span className="max-w-[180px] break-all text-center font-mono text-[10px] text-muted-foreground">
@@ -91,7 +91,7 @@ export function CLIAuthBridge() {
                 {poll.isFetching && !active ? (
                   <Badge variant="outline" className="gap-1">
                     <Loader2 className="size-3 animate-spin" />
-                    Waiting for CLI…
+                    Waiting for CLI...
                   </Badge>
                 ) : null}
                 {active ? (

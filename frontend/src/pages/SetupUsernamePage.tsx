@@ -1,5 +1,5 @@
 import { AtSign, CheckCircle2, Loader2, UserRound, XCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   AuthActionButton,
@@ -54,7 +54,7 @@ export function SetupUsernamePage() {
         ? 'Great choice. That username is available.'
         : 'Use lowercase letters, numbers, or underscores.'
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitError(null)
 
