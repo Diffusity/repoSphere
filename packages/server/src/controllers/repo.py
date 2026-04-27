@@ -5,6 +5,7 @@ from typing import List, Dict
 
 from fastapi import Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy import select, func, cast, Date
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
@@ -14,6 +15,7 @@ from src.db.models.branch import Branch
 from src.db.models.commit import Commit
 from src.db.models.tree_entry import TreeEntry
 from src.db.models.blob import Blob
+from src.db.models.star import Star
 from src.services import r2_service, diff_service
 
 
@@ -58,6 +60,10 @@ async def list_user_repositories(
     """GET /api/v1/repo/user/{username} — List all repos owned by a user."""
     result = await db.execute(
         select(Repository)
+        .options(
+            selectinload(Repository.owner),
+            selectinload(Repository.forked_from).selectinload(Repository.owner)
+        )
         .join(User)
         .where(User.username == username)
     )
@@ -74,7 +80,14 @@ async def list_public_repositories(
     language: str | None = None,
 ):
     """GET /api/v1/repo/explore — List public repositories."""
-    query = select(Repository).where(Repository.visibility == "public")
+    query = (
+        select(Repository)
+        .options(
+            selectinload(Repository.owner),
+            selectinload(Repository.forked_from).selectinload(Repository.owner)
+        )
+        .where(Repository.visibility == "public")
+    )
     if search:
         query = query.where(Repository.name.ilike(f"%{search}%"))
     if language:
@@ -96,6 +109,10 @@ async def get_repository(
     """GET /api/v1/repo/{owner}/{name} — Get repo info."""
     result = await db.execute(
         select(Repository)
+        .options(
+            selectinload(Repository.owner),
+            selectinload(Repository.forked_from).selectinload(Repository.owner)
+        )
         .join(User)
         .where(User.username == owner_username, Repository.name == name)
     )
@@ -321,6 +338,9 @@ async def push(
 
     if repo.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
+
+    if repo.forked_from_id is not None and repo.forked_from is None:
+        raise HTTPException(status_code=403, detail="Cannot push to a fork whose source has been deleted")
 
     # 2. Parse Metadata
     try:
@@ -874,6 +894,9 @@ async def pull(
         if not current_user or repo.owner_id != current_user.id:
             raise HTTPException(status_code=403, detail="Forbidden")
 
+    if repo.forked_from_id is not None and repo.forked_from is None:
+        raise HTTPException(status_code=403, detail="Cannot pull from a fork whose source has been deleted")
+
     # 3. Get master branch head
     branch_result = await db.execute(
         select(Branch).where(Branch.repo_id == repo.id, Branch.name == "master")
@@ -1000,3 +1023,225 @@ async def get_user_contributions(
             "totalCommits": total_commits,
         },
     }
+
+
+async def toggle_star(
+    owner: str,
+    name: str,
+    current_user: User,
+    db: AsyncSession,
+):
+    """POST /api/v1/repo/{owner}/{name}/star — Toggle star."""
+    # 1. Get repo
+    result = await db.execute(
+        select(Repository).join(User).where(User.username == owner, Repository.name == name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    # 2. Check if already starred
+    existing = await db.execute(
+        select(Star).where(Star.user_id == current_user.id, Star.repo_id == repo.id)
+    )
+    star = existing.scalar_one_or_none()
+    
+    if star:
+        # Unstar
+        await db.delete(star)
+        repo.stars = max(0, repo.stars - 1)
+        starred = False
+    else:
+        # Star
+        new_star = Star(user_id=current_user.id, repo_id=repo.id)
+        db.add(new_star)
+        repo.stars += 1
+        starred = True
+    
+    await db.commit()
+    return {"success": True, "data": {"starred": starred, "stars": repo.stars}}
+
+
+async def check_star(
+    owner: str,
+    name: str,
+    current_user: User,
+    db: AsyncSession,
+):
+    """GET /api/v1/repo/{owner}/{name}/star — Check if user has starred."""
+    result = await db.execute(
+        select(Repository).join(User).where(User.username == owner, Repository.name == name)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    existing = await db.execute(
+        select(Star).where(Star.user_id == current_user.id, Star.repo_id == repo.id)
+    )
+    starred = existing.scalar_one_or_none() is not None
+    
+    return {"success": True, "data": {"starred": starred, "stars": repo.stars}}
+
+
+async def list_starred_repos(
+    username: str,
+    current_user: User | None,
+    db: AsyncSession,
+):
+    """GET /api/v1/repo/user/{username}/starred — List user's starred repos."""
+    result = await db.execute(
+        select(Repository)
+        .options(
+            selectinload(Repository.owner),
+            selectinload(Repository.forked_from).selectinload(Repository.owner)
+        )
+        .join(Star, Star.repo_id == Repository.id)
+        .join(User, Star.user_id == User.id)
+        .where(User.username == username)
+    )
+    repos = result.scalars().all()
+    
+    # Filter GitHub style
+    filtered_repos = []
+    for r in repos:
+        if r.visibility == "public":
+            filtered_repos.append(r)
+        elif r.visibility == "private" and current_user and r.owner_id == current_user.id:
+            filtered_repos.append(r)
+
+    return {"success": True, "data": [r.to_dict() for r in filtered_repos]}
+
+
+async def fork_repository(
+    owner: str,
+    name: str,
+    current_user: User,
+    db: AsyncSession,
+):
+    """POST /api/v1/repo/{owner}/{name}/fork — Fork a repository."""
+    # 1. Get source repo
+    result = await db.execute(
+        select(Repository).join(User).where(User.username == owner, Repository.name == name)
+    )
+    source_repo = result.scalar_one_or_none()
+    if not source_repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    if source_repo.visibility == "private" and source_repo.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot fork a private repository")
+    
+    # 2. Check if user already has a repo with same name
+    existing = await db.execute(
+        select(Repository).where(
+            Repository.owner_id == current_user.id,
+            Repository.name == source_repo.name,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"You already have a repository named '{source_repo.name}'")
+    
+    # 3. Create forked repo
+    forked_repo = Repository(
+        owner_id=current_user.id,
+        name=source_repo.name,
+        description=source_repo.description,
+        visibility="public",
+        language=source_repo.language,
+        default_branch=source_repo.default_branch,
+        forked_from_id=source_repo.id,
+    )
+    db.add(forked_repo)
+    await db.flush()
+    
+    # 4. Copy branches
+    branches_res = await db.execute(
+        select(Branch).where(Branch.repo_id == source_repo.id)
+    )
+    source_branches = branches_res.scalars().all()
+    
+    commit_id_map = {}  # source commit id -> forked commit id
+    
+    for source_branch in source_branches:
+        # Copy commits for this branch
+        if source_branch.head_commit_id:
+            # Get all commits for the source repo
+            commits_res = await db.execute(
+                select(Commit).where(Commit.repo_id == source_repo.id).order_by(Commit.timestamp)
+            )
+            source_commits = commits_res.scalars().all()
+            
+            for sc in source_commits:
+                if sc.id in commit_id_map:
+                    continue
+                new_commit = Commit(
+                    repo_id=forked_repo.id,
+                    hash=sc.hash,
+                    parent_hash=sc.parent_hash,
+                    tree_hash=sc.tree_hash,
+                    message=sc.message,
+                    author=sc.author,
+                    timestamp=sc.timestamp,
+                )
+                db.add(new_commit)
+                await db.flush()
+                commit_id_map[sc.id] = new_commit.id
+            
+            # Copy tree entries
+            tree_res = await db.execute(
+                select(TreeEntry).where(TreeEntry.repo_id == source_repo.id)
+            )
+            source_trees = tree_res.scalars().all()
+            seen_tree_entries = set()
+            for te in source_trees:
+                key = (te.tree_hash, te.file_path)
+                if key in seen_tree_entries:
+                    continue
+                seen_tree_entries.add(key)
+                new_te = TreeEntry(
+                    repo_id=forked_repo.id,
+                    tree_hash=te.tree_hash,
+                    file_path=te.file_path,
+                    blob_hash=te.blob_hash,
+                )
+                db.add(new_te)
+            
+            # Copy blob references (blobs in R2 are shared, just create new DB records)
+            blob_res = await db.execute(
+                select(Blob).where(Blob.repo_id == source_repo.id)
+            )
+            source_blobs = blob_res.scalars().all()
+            seen_blobs = set()
+            for sb in source_blobs:
+                if sb.hash in seen_blobs:
+                    continue
+                seen_blobs.add(sb.hash)
+                new_blob = Blob(
+                    repo_id=forked_repo.id,
+                    hash=sb.hash,
+                    size_bytes=sb.size_bytes,
+                    r2_key=sb.r2_key,  # Same R2 key — shared storage
+                )
+                db.add(new_blob)
+        
+        # Create forked branch
+        head_id = commit_id_map.get(source_branch.head_commit_id) if source_branch.head_commit_id else None
+        new_branch = Branch(
+            repo_id=forked_repo.id,
+            name=source_branch.name,
+            head_commit_id=head_id,
+        )
+        db.add(new_branch)
+    
+    # 5. Increment fork count
+    source_repo.forks += 1
+    
+    await db.commit()
+    await db.refresh(forked_repo)
+    
+    return {
+        "success": True,
+        "message": f"Forked {owner}/{name} to {current_user.username}/{forked_repo.name}",
+        "data": forked_repo.to_dict(),
+    }
+

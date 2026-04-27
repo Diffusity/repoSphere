@@ -34,7 +34,7 @@ async def create_repository(
     )
 
 
-@router.get("/user/{username}")
+@router.get("/user-repos/{username}")
 async def list_user_repositories(
     username: str,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def list_user_repositories(
     return await repo_controller.list_user_repositories(username, db)
 
 
-@router.get("/user/{username}/activity")
+@router.get("/user-repos/{username}/activity")
 async def get_user_activity(
     username: str,
     db: AsyncSession = Depends(get_db),
@@ -51,7 +51,7 @@ async def get_user_activity(
     return await repo_controller.get_user_activity(username, db, limit)
 
 
-@router.get("/user/{username}/stats")
+@router.get("/user-repos/{username}/stats")
 async def get_user_stats(
     username: str,
     db: AsyncSession = Depends(get_db),
@@ -59,7 +59,7 @@ async def get_user_stats(
     return await repo_controller.get_user_stats(username, db)
 
 
-@router.get("/user/{username}/contributions")
+@router.get("/user-repos/{username}/contributions")
 async def get_user_contributions(
     username: str,
     db: AsyncSession = Depends(get_db),
@@ -83,6 +83,45 @@ async def list_branches(
     db: AsyncSession = Depends(get_db),
 ):
     return await repo_controller.list_branches(owner, name, db)
+
+
+@router.get("/user-repos/{username}/starred")
+async def list_starred_repos(
+    username: str,
+    current_user: User | None = Depends(optional_auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.list_starred_repos(username, current_user, db)
+
+
+@router.post("/{owner}/{name}/star")
+async def toggle_star(
+    owner: str,
+    name: str,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.toggle_star(owner, name, current_user, db)
+
+
+@router.get("/{owner}/{name}/star")
+async def check_star(
+    owner: str,
+    name: str,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.check_star(owner, name, current_user, db)
+
+
+@router.post("/{owner}/{name}/fork")
+async def fork_repository(
+    owner: str,
+    name: str,
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await repo_controller.fork_repository(owner, name, current_user, db)
 
 
 @router.get("/{owner}/{name}")
