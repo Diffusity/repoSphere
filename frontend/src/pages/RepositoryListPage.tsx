@@ -263,8 +263,7 @@ function NewRepoDialog() {
   const queryClient = useQueryClient()
 
   const createMutation = useMutation({
-    mutationFn: (payload: { name: string; description?: string; visibility: string }) => 
-      createRepository(client, payload),
+    mutationFn: (formData: FormData) => createRepository(client, formData),
     onSuccess: (data) => {
       if (data.success) {
         toast.success(data.message)
@@ -282,11 +281,11 @@ function NewRepoDialog() {
 
   const handleCreate = () => {
     if (!name) return
-    createMutation.mutate({
-      name,
-      description,
-      visibility: isPrivate ? 'private' : 'public'
-    })
+    const formData = new FormData()
+    formData.append('name', name)
+    if (description) formData.append('description', description)
+    formData.append('visibility', isPrivate ? 'private' : 'public')
+    createMutation.mutate(formData)
   }
 
   return (
