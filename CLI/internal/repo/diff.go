@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Diffusity/repoSphere/internal/storage"
 	"github.com/Diffusity/repoSphere/utils"
@@ -25,6 +24,7 @@ func DiffWorkingVsIndex() {
 	}
 
 	working := make(map[string]string)
+	rules := LoadIgnoreRules(repoRoot)
 
 	var walk func(dir string)
 	walk = func(dir string) {
@@ -34,15 +34,20 @@ func DiffWorkingVsIndex() {
 		}
 		for _, entry := range entries {
 			p := filepath.Join(dir, entry.Name())
+			rel, err := filepath.Rel(repoRoot, p)
+			if err != nil {
+				continue
+			}
+			normalizedRel := filepath.ToSlash(rel)
+
 			if entry.IsDir() {
-				if strings.HasSuffix(p, ".rs") {
+				if rules.ShouldIgnore(normalizedRel, true) {
 					continue
 				}
 				walk(p)
 				continue
 			}
-			rel, err := filepath.Rel(repoRoot, p)
-			if err != nil {
+			if rules.ShouldIgnore(normalizedRel, false) {
 				continue
 			}
 			// hash file content

@@ -56,15 +56,26 @@ func AddFile(filePath string) (string, error) {
 		return "", err
 	}
 
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		relPath, _ := getRelativePath(absPath)
-		removeFromIndex(relPath)
-		return "", fmt.Errorf("file does not exist: %s", filePath)
+	repoRoot, err := getRepoRoot()
+	if err != nil {
+		return "", err
 	}
 
 	relPath, err := getRelativePath(absPath)
 	if err != nil {
 		return "", err
+	}
+
+	// Check ignore rules
+	rules := LoadIgnoreRules(repoRoot)
+	if rules.ShouldIgnore(filepath.ToSlash(relPath), false) {
+		fmt.Printf("Ignored: %s (matched .rsignore rule)\n", relPath)
+		return "", nil
+	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		removeFromIndex(relPath)
+		return "", fmt.Errorf("file does not exist: %s", filePath)
 	}
 
 	content, err := os.ReadFile(absPath)
@@ -144,6 +155,12 @@ func AddAllFile(currentDir string) {
 func collectExistingFiles(rootDir string) map[string]bool {
 	existingFiles := make(map[string]bool)
 
+	repoRoot, err := getRepoRoot()
+	if err != nil {
+		return existingFiles
+	}
+	rules := LoadIgnoreRules(repoRoot)
+
 	var collectFiles func(dir string)
 	collectFiles = func(dir string) {
 		entries, err := os.ReadDir(dir)
@@ -153,12 +170,18 @@ func collectExistingFiles(rootDir string) map[string]bool {
 
 		for _, entry := range entries {
 			absPath := filepath.Join(dir, entry.Name())
+			relPath, err := getRelativePath(absPath)
+			if err != nil {
+				continue
+			}
+			normalizedRel := filepath.ToSlash(relPath)
+
 			if entry.IsDir() {
-				if !strings.HasSuffix(absPath, ".rs") {
+				if !rules.ShouldIgnore(normalizedRel, true) {
 					collectFiles(absPath)
 				}
 			} else {
-				if relPath, err := getRelativePath(absPath); err == nil {
+				if !rules.ShouldIgnore(normalizedRel, false) {
 					existingFiles[relPath] = true
 				}
 			}
