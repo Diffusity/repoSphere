@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight, Columns2, Rows3 } from 'lucide-react'
 import * as React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { cn } from '@/lib/utils'
 import type { DiffFile, DiffHunk, DiffLine } from '@/types'
 
@@ -89,6 +90,7 @@ function DiffFileBlock({
   const [open, setOpen] = React.useState(true)
   const pad = compact ? 'px-2 py-1.5' : 'px-3 py-2'
   const textSize = compact ? 'text-xs leading-4' : 'text-sm leading-5'
+  const language = getLanguageFromPath(file.path)
 
   return (
     <div className="overflow-hidden rounded-lg border border-rs-border bg-rs-surface">
@@ -113,10 +115,10 @@ function DiffFileBlock({
             <div className={cn('text-muted-foreground', pad)}>No diff hunks (binary or empty)</div>
           ) : view === 'unified' ? (
             file.hunks.map((hunk, hi) => (
-              <UnifiedHunk key={hi} hunk={hunk} textSize={textSize} compact={compact} />
+              <UnifiedHunk key={hi} hunk={hunk} textSize={textSize} compact={compact} language={language} />
             ))
           ) : (
-            file.hunks.map((hunk, hi) => <SplitHunk key={hi} hunk={hunk} textSize={textSize} compact={compact} />)
+            file.hunks.map((hunk, hi) => <SplitHunk key={hi} hunk={hunk} textSize={textSize} compact={compact} language={language} />)
           )}
         </div>
       )}
@@ -128,16 +130,23 @@ function UnifiedHunk({
   hunk,
   textSize,
   compact,
+  language,
 }: {
   hunk: DiffHunk
   textSize: string
   compact: boolean
+  language?: string
 }) {
   const { oldCount, newCount } = hunkStats(hunk.lines)
   const header =
     hunk.oldStart === 0 && oldCount === 0
       ? `@@ -0,0 +${hunk.newStart},${newCount} @@`
       : `@@ -${hunk.oldStart},${oldCount} +${hunk.newStart},${newCount} @@`
+
+  const highlightedContents = React.useMemo(() => {
+    const allContent = hunk.lines.map(l => l.content).join('\n')
+    return highlightLines(allContent, language)
+  }, [hunk.lines, language])
 
   return (
     <div className="border-b border-rs-border/50 last:border-b-0">
@@ -151,14 +160,14 @@ function UnifiedHunk({
       </div>
       <pre className={cn('m-0 font-mono', textSize)}>
         {hunk.lines.map((line, li) => (
-          <DiffUnifiedLine key={li} line={line} compact={compact} />
+          <DiffUnifiedLine key={li} line={line} compact={compact} highlightedHtml={highlightedContents[li]} />
         ))}
       </pre>
     </div>
   )
 }
 
-function DiffUnifiedLine({ line, compact }: { line: DiffLine; compact: boolean }) {
+function DiffUnifiedLine({ line, compact, highlightedHtml }: { line: DiffLine; compact: boolean; highlightedHtml?: string }) {
   const wNum = compact ? 'w-8' : 'w-10'
   return (
     <div
@@ -186,18 +195,34 @@ function DiffUnifiedLine({ line, compact }: { line: DiffLine; compact: boolean }
         {line.newLineNumber ?? ''}
       </span>
       <span className="w-5 shrink-0 select-none px-0.5 text-center text-muted-foreground">{line.type}</span>
-      <code className="flex-1 whitespace-pre-wrap px-2">{line.content}</code>
+      <code 
+        className="flex-1 whitespace-pre-wrap px-2"
+        dangerouslySetInnerHTML={{ __html: highlightedHtml || '&nbsp;' }}
+      />
     </div>
   )
 }
 
-function SplitHunk({ hunk, textSize, compact }: { hunk: DiffHunk; textSize: string; compact: boolean }) {
+function SplitHunk({ hunk, textSize, compact, language }: { hunk: DiffHunk; textSize: string; compact: boolean; language?: string }) {
   const { oldCount, newCount } = hunkStats(hunk.lines)
   const header =
     hunk.oldStart === 0 && oldCount === 0
       ? `@@ -0,0 +${hunk.newStart},${newCount} @@`
       : `@@ -${hunk.oldStart},${oldCount} +${hunk.newStart},${newCount} @@`
   const wNum = compact ? 'w-7' : 'w-9'
+
+  const oldHighlighted = React.useMemo(() => {
+    const oldLines = hunk.lines.filter(l => l.type !== '+').map(l => l.content).join('\n')
+    return highlightLines(oldLines, language)
+  }, [hunk.lines, language])
+
+  const newHighlighted = React.useMemo(() => {
+    const newLines = hunk.lines.filter(l => l.type !== '-').map(l => l.content).join('\n')
+    return highlightLines(newLines, language)
+  }, [hunk.lines, language])
+
+  let oldIdx = 0
+  let newIdx = 0
 
   return (
     <div className="border-b border-rs-border/50 last:border-b-0">
@@ -214,17 +239,21 @@ function SplitHunk({ hunk, textSize, compact }: { hunk: DiffHunk; textSize: stri
           <div className="border-b border-rs-border/40 bg-rs-elevated/40 px-2 py-1 text-[10px] font-medium text-muted-foreground">
             Before
           </div>
-          {hunk.lines.map((line, li) => (
-            <SplitCell key={`o-${li}`} line={line} side="old" wNum={wNum} />
-          ))}
+          {hunk.lines.map((line, li) => {
+            const isOld = line.type !== '+'
+            const html = isOld ? oldHighlighted[oldIdx++] : undefined
+            return <SplitCell key={`o-${li}`} line={line} side="old" wNum={wNum} highlightedHtml={html} />
+          })}
         </div>
         <div className="min-w-0 bg-rs-bg/30">
           <div className="border-b border-rs-border/40 bg-rs-elevated/40 px-2 py-1 text-[10px] font-medium text-muted-foreground">
             After
           </div>
-          {hunk.lines.map((line, li) => (
-            <SplitCell key={`n-${li}`} side="new" line={line} wNum={wNum} />
-          ))}
+          {hunk.lines.map((line, li) => {
+            const isNew = line.type !== '-'
+            const html = isNew ? newHighlighted[newIdx++] : undefined
+            return <SplitCell key={`n-${li}`} side="new" line={line} wNum={wNum} highlightedHtml={html} />
+          })}
         </div>
       </div>
     </div>
@@ -235,10 +264,12 @@ function SplitCell({
   line,
   side,
   wNum,
+  highlightedHtml,
 }: {
   line: DiffLine
   side: 'old' | 'new'
   wNum: string
+  highlightedHtml?: string
 }) {
   if (side === 'old') {
     if (line.type === '+') {
@@ -255,7 +286,10 @@ function SplitCell({
         >
           {line.oldLineNumber ?? ''}
         </span>
-        <code className="flex-1 whitespace-pre-wrap px-2">{line.content}</code>
+        <code 
+          className="flex-1 whitespace-pre-wrap px-2"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml || '&nbsp;' }}
+        />
       </div>
     )
   }
@@ -274,7 +308,10 @@ function SplitCell({
       >
         {line.newLineNumber ?? ''}
       </span>
-      <code className="flex-1 whitespace-pre-wrap px-2">{line.content}</code>
+      <code 
+        className="flex-1 whitespace-pre-wrap px-2"
+        dangerouslySetInnerHTML={{ __html: highlightedHtml || '&nbsp;' }}
+      />
     </div>
   )
 }

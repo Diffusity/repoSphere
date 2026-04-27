@@ -37,6 +37,7 @@ import {
   useBlobContent, 
   useCommits 
 } from '@/hooks/useRepository'
+import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
 
 export function RepositoryPage() {
@@ -74,7 +75,7 @@ export function RepositoryPage() {
     if (blob.encoding === 'base64') {
       try {
         return atob(blob.content)
-      } catch (e) {
+      } catch {
         return 'Unable to decode content'
       }
     }
@@ -88,6 +89,14 @@ export function RepositoryPage() {
       content: line
     }))
   }, [decodedContent])
+
+  const language = useMemo(() => getLanguageFromPath(treePathInRepo), [treePathInRepo])
+
+  const highlightedLines = useMemo(() => {
+    if (!decodedContent) return []
+    const lines = highlightLines(decodedContent, language)
+    return lines.map((html, i) => ({ number: i + 1, html }))
+  }, [decodedContent, language])
 
   if (repoLoading) {
     return (
@@ -293,13 +302,16 @@ export function RepositoryPage() {
                   ) : (
                     <table className="w-full border-collapse font-mono text-sm leading-6">
                       <tbody>
-                        {fileLines.map((line) => (
+                        {highlightedLines.map((line) => (
                           <tr key={line.number} className="border-b border-[#21262d]/70 last:border-b-0">
                             <td className="w-14 select-none border-r border-rs-border px-3 text-right align-top text-xs text-muted-foreground">
                               {line.number}
                             </td>
                             <td className="px-4 py-0.5 text-foreground">
-                              <span className="whitespace-pre text-gray-300">{line.content || ' '}</span>
+                              <span 
+                                className="whitespace-pre text-gray-300"
+                                dangerouslySetInnerHTML={{ __html: line.html || '&nbsp;' }}
+                              />
                             </td>
                           </tr>
                         ))}
