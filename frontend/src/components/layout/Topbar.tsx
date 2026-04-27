@@ -29,14 +29,7 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-4 border-b border-rs-border/80 bg-rs-bg/78 pl-14 pr-4 backdrop-blur-xl md:pl-6 md:pr-6">
       <div className="hidden flex-1 md:block" />
-      <div className="relative flex flex-1 md:max-w-md">
-        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search repositories..."
-          className="h-9 border-rs-border/80 bg-rs-surface/80 pl-9"
-          aria-label="Search"
-        />
-      </div>
+
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
