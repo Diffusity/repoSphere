@@ -31,11 +31,10 @@ export function ContributionHeatmap({ data, isLoading }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  const { startDate, endDate, contributions, totalCommits } = useMemo(() => {
+  const { startDate, contributions, totalCommits } = useMemo(() => {
     if (!data || !data.startDate || !data.endDate) {
       return {
         startDate: format(addDays(new Date(), -364), 'yyyy-MM-dd'),
-        endDate: format(new Date(), 'yyyy-MM-dd'),
         contributions: {} as Record<string, number>,
         totalCommits: 0,
       }
