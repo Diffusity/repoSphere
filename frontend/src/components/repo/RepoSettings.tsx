@@ -24,8 +24,7 @@ import { useConfirmDeleteRepository, useRepository, useUpdateRepository } from '
 import { useAuthStore } from '@/stores/authStore'
 import type { Repository } from '@/types'
 
-export function RepoSettingsPage() {
-  const { username = '', repoName = '' } = useParams()
+export function RepoSettings({ username, repoName }: { username: string; repoName: string }) {
   const currentUser = useAuthStore((s) => s.user)
   const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
   const repo = repoRes?.success ? repoRes.data : null
@@ -118,19 +117,7 @@ function RepoSettingsForm({
   }
 
   return (
-    <div className="app-page max-w-4xl pb-12">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to={`/${username}/${repoName}`} className="flex items-center gap-1 hover:text-rs-link">
-          <ChevronLeft className="size-4" />
-          Back to repository
-        </Link>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="size-6 text-muted-foreground" />
-        <h1 className="page-title">Repository Settings</h1>
-      </div>
-
+    <div className="py-2">
       <div className="space-y-6">
         <Card className="surface-panel">
           <CardHeader className="border-b border-rs-border/50">

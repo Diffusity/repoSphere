@@ -53,6 +53,7 @@ import { CommitList } from '@/components/repo/CommitList'
 import { IssuesList } from '@/components/repo/IssuesList'
 import { IssueDetail } from '@/components/repo/IssueDetail'
 import { NewIssueForm } from '@/components/repo/NewIssueForm'
+import { RepoSettings } from '@/components/repo/RepoSettings'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -92,6 +93,7 @@ export function RepositoryPage() {
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
   const isIssuesTab = location.pathname.includes('/issues')
+  const isSettingsTab = location.pathname.includes('/settings')
   const isNewIssue = location.pathname.endsWith('/issues/new')
   const issueMatch = location.pathname.match(/\/issues\/(\d+)/)
   const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null
@@ -99,7 +101,7 @@ export function RepositoryPage() {
   const { data: issuesCountRes } = useIssues(username, repoName, 'open', undefined, 1, 0)
   const openIssueCount = issuesCountRes?.success ? issuesCountRes.data.openCount : 0
 
-  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab
+  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab && !isSettingsTab
 
   const readmeEntry = useMemo(() => {
     if (!tree || routeKind !== 'tree' || treePathInRepo !== '') return null
@@ -309,7 +311,7 @@ export function RepositoryPage() {
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 
-          active={!isCommitsTab && !isIssuesTab} 
+          active={!isCommitsTab && !isIssuesTab && !isSettingsTab} 
           icon={Code} 
           label="Code" 
           to={`/${username}/${repoName}/tree/${branch}`} 
@@ -331,11 +333,17 @@ export function RepositoryPage() {
           count={openIssueCount}
         />
         {isOwner && (
-          <TabItem icon={Settings} label="Settings" to={`/${username}/${repoName}/settings`} asLink />
+          <TabItem 
+            active={isSettingsTab}
+            icon={Settings} 
+            label="Settings" 
+            to={`/${username}/${repoName}/settings`} 
+            asLink 
+          />
         )}
       </nav>
 
-      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
+      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isSettingsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
@@ -347,6 +355,8 @@ export function RepositoryPage() {
             ) : (
               <IssuesList username={username} repoName={repoName} />
             )
+          ) : isSettingsTab ? (
+            <RepoSettings username={username} repoName={repoName} />
           ) : (
             <div className="surface-panel overflow-hidden">
               {isObjectRoute ? (
@@ -570,7 +580,7 @@ export function RepositoryPage() {
           )}
         </section>
 
-        {!isCommitsTab && (
+        {!isCommitsTab && !isIssuesTab && !isSettingsTab && (
           <aside className="space-y-6 text-sm">
             <section>
               <h2 className="mb-2 text-base font-semibold text-white">About</h2>
