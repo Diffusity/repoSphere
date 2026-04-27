@@ -11,7 +11,8 @@ import {
   fetchUserStats,
   fetchUserContributions,
   updateRepository,
-  confirmDeleteRepository
+  confirmDeleteRepository,
+  fetchBranches
 } from '@/api/repo'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -21,6 +22,16 @@ export function useRepository(owner: string, name: string) {
   return useQuery({
     queryKey: ['repository', owner, name],
     queryFn: () => fetchRepository(client, owner, name),
+    enabled: !!owner && !!name,
+  })
+}
+
+export function useBranches(owner: string, name: string) {
+  const client = useApiClient()
+
+  return useQuery({
+    queryKey: ['branches', owner, name],
+    queryFn: () => fetchBranches(client, owner, name),
     enabled: !!owner && !!name,
   })
 }

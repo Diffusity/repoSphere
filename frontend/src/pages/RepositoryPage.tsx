@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Fragment, useMemo } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { RepositoryEntries } from '@/components/common/RepositoryEntries'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +35,8 @@ import {
   useRepository, 
   useRepositoryTree, 
   useBlobContent, 
-  useCommits 
+  useCommits,
+  useBranches
 } from '@/hooks/useRepository'
 import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
@@ -44,6 +45,7 @@ import { CommitList } from '@/components/repo/CommitList'
 export function RepositoryPage() {
   const params = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const username = params.username ?? ''
   const repoName = params.repoName ?? ''
   const branchFromRoute = params.branch
@@ -61,11 +63,13 @@ export function RepositoryPage() {
   const { data: treeRes, isLoading: treeLoading } = useRepositoryTree(username, repoName, branch, routeKind === 'tree' ? treePathInRepo : '')
   const { data: blobRes, isLoading: blobLoading } = useBlobContent(username, repoName, branch, treePathInRepo)
   const { data: commitsRes, isLoading: commitsLoading } = useCommits(username, repoName, branch)
+  const { data: branchesRes } = useBranches(username, repoName)
 
   const repo = repoRes?.success ? repoRes.data : null
   const tree = treeRes?.success ? treeRes.data : []
   const blob = blobRes?.success ? blobRes.data : null
   const commits = commitsRes?.success ? commitsRes.data : []
+  const branches = branchesRes?.success ? branchesRes.data : []
   const latest = commits[0]
 
   const isBlob = routeKind === 'blob'
@@ -232,10 +236,23 @@ export function RepositoryPage() {
                   <select
                     className="max-w-28 bg-transparent font-medium text-foreground outline-none cursor-pointer"
                     value={branch}
-                    onChange={() => {}} // TODO: Branch switching
+                    onChange={(e) => {
+                      const newBranch = e.target.value
+                      navigate(`/${username}/${repoName}/tree/${newBranch}`)
+                    }}
                     aria-label="Branch"
                   >
-                    <option value={repo.defaultBranch} className="bg-[#111]">{repo.defaultBranch}</option>
+                    {branches.length > 0 ? (
+                      branches.map((b) => (
+                        <option key={b.name} value={b.name} className="bg-[#111]">
+                          {b.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={repo.defaultBranch} className="bg-[#111]">
+                        {repo.defaultBranch}
+                      </option>
+                    )}
                   </select>
                   <ChevronDown className="size-3.5 text-muted-foreground" />
                 </div>
