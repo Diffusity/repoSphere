@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Diffusity/repoSphere/internal/storage"
 )
@@ -28,6 +27,41 @@ func InitRepo() error {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
+	}
+
+	// Create default .rsignore BEFORE indexing
+	defaultIgnore := `# RepoSphere ignore file
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+venv/
+
+# Build outputs
+dist/
+build/
+out/
+*.exe
+*.o
+*.a
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.local
+`
+	if err := os.WriteFile(".rsignore", []byte(defaultIgnore), 0644); err != nil {
+		fmt.Printf("Warning: Could not create .rsignore: %v\n", err)
 	}
 
 	InitializeIndex()
@@ -117,6 +151,7 @@ func InitializeIndex() {
 // collectAllFiles recursively collects all files in the given directory, excluding .rs
 func collectAllFiles(rootDir string) map[string]bool {
 	existingFiles := make(map[string]bool)
+	rules := LoadIgnoreRules(rootDir)
 
 	var collectFiles func(dir string)
 	collectFiles = func(dir string) {
@@ -127,13 +162,18 @@ func collectAllFiles(rootDir string) map[string]bool {
 
 		for _, entry := range entries {
 			path := filepath.Join(dir, entry.Name())
+			relPath, _ := filepath.Rel(rootDir, path)
+			normalizedRel := filepath.ToSlash(relPath)
+
 			if entry.IsDir() {
 				// Skip .rs directory
-				if !strings.HasSuffix(path, ".rs") {
+				if !rules.ShouldIgnore(normalizedRel, true) {
 					collectFiles(path)
 				}
 			} else {
-				existingFiles[path] = true
+				if !rules.ShouldIgnore(normalizedRel, false) {
+					existingFiles[path] = true
+				}
 			}
 		}
 	}

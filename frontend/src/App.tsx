@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
 import { CommitDetailPage } from '@/pages/CommitDetailPage'
-import { CommitListPage } from '@/pages/CommitListPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ExplorePage } from '@/pages/ExplorePage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
@@ -61,7 +60,7 @@ export default function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/repositories" element={<RepositoryListPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/:username/:repoName/commits" element={<CommitListPage />} />
+          <Route path="/:username/:repoName/commits" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/commit/:hash" element={<CommitDetailPage />} />
           <Route path="/:username/:repoName/settings" element={<RepoSettingsPage />} />
           <Route path="/:username/:repoName/blob/:branch/*" element={<RepositoryPage />} />
