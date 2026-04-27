@@ -1,10 +1,10 @@
 import uuid
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 
 from fastapi import Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy import select
+from sqlalchemy import select, func, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
@@ -904,4 +904,50 @@ async def pull(
             "trees": trees_map,
             "blob_urls": blob_urls,
         }
+    }
+
+
+async def get_user_contributions(
+    username: str,
+    db: AsyncSession,
+):
+    """GET /api/v1/repo/user/{username}/contributions — Daily commit counts for 365 days."""
+    ist_offset = timedelta(hours=5, minutes=30)
+    ist_tz = timezone(ist_offset)
+    
+    now_ist = datetime.now(ist_tz)
+    end_date = now_ist.date()
+    start_date = end_date - timedelta(days=364)
+    start_datetime_utc = (now_ist - timedelta(days=364)).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+
+    # Fetch all commits by the user in the past 365 days
+    result = await db.execute(
+        select(Commit.timestamp)
+        .join(Repository)
+        .join(User, Repository.owner_id == User.id)
+        .where(
+            User.username == username,
+            Commit.timestamp >= start_datetime_utc,
+        )
+    )
+    rows = result.all()
+
+    # Build a map: "YYYY-MM-DD" -> count
+    contributions = {}
+    total_commits = 0
+    for row in rows:
+        commit_date_ist = row.timestamp.astimezone(ist_tz).date()
+        if start_date <= commit_date_ist <= end_date:
+            date_str = str(commit_date_ist)
+            contributions[date_str] = contributions.get(date_str, 0) + 1
+            total_commits += 1
+
+    return {
+        "success": True,
+        "data": {
+            "contributions": contributions,
+            "startDate": str(start_date),
+            "endDate": str(end_date),
+            "totalCommits": total_commits,
+        },
     }

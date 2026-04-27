@@ -7,12 +7,15 @@ import { useRepositories } from '@/hooks/useRepositories'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
+import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
+import { useUserContributions } from '@/hooks/useRepository'
 
 export function ProfilePage() {
   const { username = '' } = useParams()
   const user = useAuthStore((s) => s.user)
   const userLoaded = useAuthStore((s) => s.isLoaded)
   const { repositories, isLoading } = useRepositories(username)
+  const { data: contributions, isLoading: isLoadingContributions } = useUserContributions(username)
 
   const isYou = userLoaded && (
     user?.username === username ||
@@ -41,6 +44,13 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <section className="pt-2 pb-2">
+        <ContributionHeatmap 
+          data={contributions?.data} 
+          isLoading={isLoadingContributions} 
+        />
+      </section>
 
       <Separator />
 

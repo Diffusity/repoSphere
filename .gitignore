@@ -38,3 +38,5 @@ test_*.py
 jest.config.*
 jest.setup.*
 __mocks__/
+Suggestion_req.md
+/implementation_plans

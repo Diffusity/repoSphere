@@ -38,6 +38,20 @@ export async function fetchUserStats(client: AxiosInstance, username: string) {
   return data
 }
 
+export interface ContributionData {
+  contributions: Record<string, number>
+  startDate: string
+  endDate: string
+  totalCommits: number
+}
+
+export async function fetchUserContributions(client: AxiosInstance, username: string) {
+  const { data } = await client.get<ApiResponse<ContributionData>>(
+    `/api/v1/repo/user/${username}/contributions`
+  )
+  return data
+}
+
 export async function fetchExploreRepositories(
   client: AxiosInstance, 
   options: { search?: string; language?: string } = {}
