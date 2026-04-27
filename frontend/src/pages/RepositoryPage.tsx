@@ -39,7 +39,10 @@ import {
   useRepositoryTree, 
   useBlobContent, 
   useCommits,
-  useBranches
+  useBranches,
+  useStarStatus,
+  useToggleStar,
+  useForkRepository
 } from '@/hooks/useRepository'
 import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
@@ -74,6 +77,11 @@ export function RepositoryPage() {
   const commits = commitsRes?.success ? commitsRes.data : []
   const branches = branchesRes?.success ? branchesRes.data : []
   const latest = commits[0]
+
+  const { data: starRes } = useStarStatus(username, repoName)
+  const toggleStar = useToggleStar()
+  const forkRepo = useForkRepository()
+  const isStarred = starRes?.success ? starRes.data.starred : false
 
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
@@ -155,6 +163,15 @@ export function RepositoryPage() {
             </Badge>
           </div>
 
+          {repo.forkedFrom && (
+            <div className="text-xs text-muted-foreground">
+              Forked from{' '}
+              <Link to={`/${repo.forkedFrom.ownerUsername}/${repo.forkedFrom.name}`} className="text-rs-link hover:underline">
+                {repo.forkedFrom.ownerUsername}/{repo.forkedFrom.name}
+              </Link>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
             <h1 className="truncate text-2xl font-semibold tracking-tight text-white">{repo.name}</h1>
@@ -172,10 +189,87 @@ export function RepositoryPage() {
 
         <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
           <RepoActionButton icon={Eye} label="Watch" value="0" />
-          <RepoActionButton icon={GitFork} label="Fork" value={String(repo.forks)} />
-          <RepoActionButton icon={Star} label="Star" value={String(repo.stars)} />
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]"
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              if (!isOwner) {
+                forkRepo.mutate({ owner: username, name: repoName }, {
+                  onSuccess: (res) => {
+                    if (res.success && res.data) {
+                      navigate(`/${currentUser.username}/${res.data.name}`)
+                    }
+                  }
+                })
+              }
+            }}
+            disabled={isOwner || forkRepo.isPending}
+          >
+            <GitFork className="size-3.5" />
+            Fork <span className="tabular-nums text-foreground">{repo.forks}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]",
+              isStarred && "text-yellow-400"
+            )}
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              toggleStar.mutate({ owner: username, name: repoName })
+            }}
+            disabled={toggleStar.isPending}
+          >
+            <Star className={cn("size-3.5", isStarred && "fill-yellow-400")} />
+            {isStarred ? 'Starred' : 'Star'} <span className="tabular-nums text-foreground">{repo.stars}</span>
+          </Button>
         </div>
       </header>
+
+      {repo.sourceDeleted && (
+        <div className="rounded-md border border-red-900 bg-red-950/30 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Scale className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-400">
+                Source Repository Deleted
+              </h3>
+              <div className="mt-2 text-sm text-red-300">
+                <p>
+                  The source repository for this fork has been deleted. Push and pull operations are disabled. You may delete this repository.
+                </p>
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  {isOwner && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-900 bg-red-950/50 text-red-400 hover:bg-red-900 hover:text-white"
+                      onClick={() => navigate(`/${username}/${repoName}/settings`)}
+                    >
+                      Delete Repository
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 

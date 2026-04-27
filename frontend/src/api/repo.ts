@@ -28,19 +28,19 @@ export async function createRepository(
 }
 
 export async function fetchUserRepositories(client: AxiosInstance, username: string) {
-  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user/${username}`)
+  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${username}`)
   return data
 }
 
 export async function fetchUserActivity(client: AxiosInstance, username: string, limit = 10) {
   const { data } = await client.get<ApiResponse<ActivityItem[]>>(
-    `/api/v1/repo/user/${username}/activity?limit=${limit}`
+    `/api/v1/repo/user-repos/${username}/activity?limit=${limit}`
   )
   return data
 }
 
 export async function fetchUserStats(client: AxiosInstance, username: string) {
-  const { data } = await client.get<ApiResponse<UserStats>>(`/api/v1/repo/user/${username}/stats`)
+  const { data } = await client.get<ApiResponse<UserStats>>(`/api/v1/repo/user-repos/${username}/stats`)
   return data
 }
 
@@ -53,7 +53,7 @@ export interface ContributionData {
 
 export async function fetchUserContributions(client: AxiosInstance, username: string) {
   const { data } = await client.get<ApiResponse<ContributionData>>(
-    `/api/v1/repo/user/${username}/contributions`
+    `/api/v1/repo/user-repos/${username}/contributions`
   )
   return data
 }
@@ -183,5 +183,31 @@ export async function confirmDeleteRepository(
     `/api/v1/repo/${owner}/${name}/confirm-delete`,
     { confirmation_name: confirmationName }
   )
+  return data
+}
+
+export async function toggleStar(client: AxiosInstance, owner: string, name: string) {
+  const { data } = await client.post<ApiResponse<{ starred: boolean; stars: number }>>(
+    `/api/v1/repo/${owner}/${name}/star`
+  )
+  return data
+}
+
+export async function checkStar(client: AxiosInstance, owner: string, name: string) {
+  const { data } = await client.get<ApiResponse<{ starred: boolean; stars: number }>>(
+    `/api/v1/repo/${owner}/${name}/star`
+  )
+  return data
+}
+
+export async function forkRepository(client: AxiosInstance, owner: string, name: string) {
+  const { data } = await client.post<ApiResponse<Repository>>(
+    `/api/v1/repo/${owner}/${name}/fork`
+  )
+  return data
+}
+
+export async function fetchStarredRepositories(client: AxiosInstance, username: string) {
+  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${username}/starred`)
   return data
 }

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FolderGit2, Plus, Search, Loader2 } from 'lucide-react'
+import { FolderGit2, Plus, Search, Loader2, Star } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { RepoCard } from '@/components/common/RepoCard'
@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useRepositories } from '@/hooks/useRepositories'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { useRepositories, useStarredRepositories } from '@/hooks/useRepositories'
 import { useApiClient } from '@/api/client'
 import { createRepository } from '@/api/repo'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,6 +27,7 @@ import type { Repository } from '@/types'
 export function RepositoryListPage() {
   const username = useAuthStore((s) => s.user?.username ?? '')
   const { repositories, isLoading } = useRepositories(username)
+  const { repositories: starredRepos, isLoading: isLoadingStarred } = useStarredRepositories(username)
   const [q, setQ] = React.useState('')
   const [lang, setLang] = React.useState<string | 'all'>('all')
   const [sort, setSort] = React.useState<'updated' | 'stars' | 'name'>('updated')
@@ -61,63 +64,104 @@ export function RepositoryListPage() {
         <NewRepoDialog />
       </div>
 
-      <div className="flex flex-col gap-4 rounded-lg border border-rs-border bg-rs-surface p-4 md:flex-row md:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Find a repository…"
-            className="pl-9"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
-            value={lang}
-            onChange={(e) => setLang(e.target.value as typeof lang)}
-            aria-label="Filter by language"
-          >
-            {languages.map((l) => (
-              <option key={l} value={l} className="bg-[#111]">
-                {l === 'all' ? 'All languages' : l}
-              </option>
-            ))}
-          </select>
-          <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as typeof sort)}
-            aria-label="Sort repositories"
-          >
-            <option value="updated" className="bg-[#111]">Last updated</option>
-            <option value="stars" className="bg-[#111]">Stars</option>
-            <option value="name" className="bg-[#111]">Name</option>
-          </select>
-        </div>
-      </div>
+      <Tabs defaultValue="repositories" className="w-full">
+        <TabsList className="mb-4 bg-rs-surface/50 border border-rs-border">
+          <TabsTrigger value="repositories" className="data-[state=active]:bg-rs-accent data-[state=active]:text-white">
+            <FolderGit2 className="w-4 h-4 mr-2" />
+            Repositories
+            <Badge variant="secondary" className="ml-2 bg-rs-surface/50">{isLoading ? '...' : repositories.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="starred" className="data-[state=active]:bg-rs-accent data-[state=active]:text-white">
+            <Star className="w-4 h-4 mr-2" />
+            Starred
+            <Badge variant="secondary" className="ml-2 bg-rs-surface/50">{isLoadingStarred ? '...' : starredRepos.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 rounded-lg border border-rs-border bg-rs-surface animate-pulse" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card className="border-dashed border-rs-border bg-rs-surface">
-          <CardHeader className="flex flex-col items-center py-16 text-center">
-            <FolderGit2 className="mb-4 size-16 text-muted-foreground/40" />
-            <CardTitle>No repositories found</CardTitle>
-            <CardDescription>Try another search or create a new repository.</CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((r: Repository) => (
-            <RepoCard key={r.id} repo={r} />
-          ))}
-        </div>
-      )}
+        <TabsContent value="repositories" className="mt-0">
+          <div className="flex flex-col gap-4 rounded-lg border border-rs-border bg-rs-surface p-4 md:flex-row md:items-center mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Find a repository…"
+                className="pl-9"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
+                value={lang}
+                onChange={(e) => setLang(e.target.value as typeof lang)}
+                aria-label="Filter by language"
+              >
+                {languages.map((l) => (
+                  <option key={l} value={l} className="bg-[#111]">
+                    {l === 'all' ? 'All languages' : l}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-white"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as typeof sort)}
+                aria-label="Sort repositories"
+              >
+                <option value="updated" className="bg-[#111]">Last updated</option>
+                <option value="stars" className="bg-[#111]">Stars</option>
+                <option value="name" className="bg-[#111]">Name</option>
+              </select>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-40 rounded-lg border border-rs-border bg-rs-surface animate-pulse" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="border-dashed border-rs-border bg-rs-surface">
+              <CardHeader className="flex flex-col items-center py-16 text-center">
+                <FolderGit2 className="mb-4 size-16 text-muted-foreground/40" />
+                <CardTitle>No repositories found</CardTitle>
+                <CardDescription>Try another search or create a new repository.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {filtered.map((r: Repository) => (
+                <RepoCard key={r.id} repo={r} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="starred" className="mt-0">
+          {isLoadingStarred ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-40 rounded-lg border border-rs-border bg-rs-surface animate-pulse" />
+              ))}
+            </div>
+          ) : starredRepos.length === 0 ? (
+            <Card className="border-dashed border-rs-border bg-rs-surface">
+              <CardHeader className="flex flex-col items-center py-16 text-center">
+                <Star className="mb-4 size-16 text-muted-foreground/40" />
+                <CardTitle>No starred repositories</CardTitle>
+                <CardDescription>You haven't starred any repositories yet.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {starredRepos.map((r: Repository) => (
+                <RepoCard key={r.id} repo={r} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

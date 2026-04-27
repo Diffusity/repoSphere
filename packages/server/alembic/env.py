@@ -23,6 +23,7 @@ from src.db.models import repository  # noqa: F401
 from src.db.models import session  # noqa: F401
 from src.db.models import tree_entry  # noqa: F401
 from src.db.models import user  # noqa: F401
+from src.db.models import star  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
