@@ -1,5 +1,5 @@
 import { ArrowRight, KeyRound, Loader2, RefreshCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { forgotPassword, resetPassword } from '@/api/auth'
 import { useApiClient } from '@/api/client'
@@ -35,7 +35,7 @@ export function ResetPasswordPage() {
     return () => window.clearTimeout(timer)
   }, [cooldown])
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -147,7 +147,7 @@ export function ResetPasswordPage() {
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+            className="h-12 w-full rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
             onClick={() => void onResend()}
             disabled={resending || cooldown > 0}
           >
@@ -167,7 +167,7 @@ export function ResetPasswordPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-12 rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+              className="h-12 rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
               onClick={() => navigate('/sign-in')}
             >
               Back to sign in

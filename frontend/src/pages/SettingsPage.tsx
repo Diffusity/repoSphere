@@ -1,3 +1,4 @@
+import { Bell, ShieldCheck, UserRound } from 'lucide-react'
 import { CLIAuthBridge } from '@/components/auth/CLIAuthBridge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,10 +12,10 @@ export function SettingsPage() {
   const user = useAuthStore((s) => s.user)
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your profile, CLI access, and preferences.</p>
+    <div className="app-page max-w-4xl">
+      <div className="page-heading">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">Manage your profile, CLI access, and preferences.</p>
       </div>
 
       <Tabs defaultValue="profile">
@@ -25,16 +26,19 @@ export function SettingsPage() {
         </TabsList>
 
         <TabsContent value="profile" className="mt-6 space-y-6">
-          <Card className="border-rs-border bg-rs-surface">
+          <Card className="surface-panel">
             <CardHeader>
-              <CardTitle>Public profile</CardTitle>
+              <div className="flex items-center gap-2">
+                <UserRound className="size-4 text-rs-link" />
+                <CardTitle>Public Profile</CardTitle>
+              </div>
               <CardDescription>Information shown on your RepoSphere profile.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-wrap items-center gap-6">
-                <Avatar className="size-20 border border-rs-border">
+                <Avatar className="size-20 border border-rs-border bg-rs-elevated">
                   <AvatarImage src={user?.imageUrl ?? undefined} />
-                  <AvatarFallback className="text-xl">{user?.name?.[0] ?? 'U'}</AvatarFallback>
+                  <AvatarFallback className="bg-rs-elevated text-xl">{user?.name?.[0] ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
                   <p className="font-medium">{user?.name}</p>
@@ -62,15 +66,17 @@ export function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-rs-border bg-rs-surface">
+          <Card className="surface-panel">
             <CardHeader>
-              <CardTitle>Account security</CardTitle>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-rs-accent" />
+                <CardTitle>Account Security</CardTitle>
+              </div>
               <CardDescription>Password and provider management will be configurable here.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent>
               <p className="text-sm text-muted-foreground">
-                This section now uses RepoSphere native authentication. Provider linking and password update UI can be
-                added next.
+                RepoSphere native authentication is active for this account.
               </p>
             </CardContent>
           </Card>
@@ -81,10 +87,13 @@ export function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-6">
-          <Card className="border-rs-border bg-rs-surface">
+          <Card className="surface-panel">
             <CardHeader>
-              <CardTitle>Notifications</CardTitle>
-              <CardDescription>Placeholder toggles for email preferences.</CardDescription>
+              <div className="flex items-center gap-2">
+                <Bell className="size-4 text-rs-warm" />
+                <CardTitle>Notifications</CardTitle>
+              </div>
+              <CardDescription>Email preferences for account activity.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">

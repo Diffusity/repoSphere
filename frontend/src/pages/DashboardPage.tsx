@@ -1,5 +1,7 @@
-import { GitBranchPlus, Plus, Sparkles, Terminal } from 'lucide-react'
+import { FolderGit2, GitBranchPlus, Plus, Sparkles, Terminal, Users, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,17 +10,15 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useRepositories } from '@/hooks/useRepositories'
+import { useUserActivity, useUserContributions, useUserStats } from '@/hooks/useRepository'
 import { formatRelativeTime, truncateHash } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
-
-import { useUserActivity, useUserStats, useUserContributions } from '@/hooks/useRepository'
-import { ContributionHeatmap } from '@/components/common/ContributionHeatmap'
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const authLoaded = useAuthStore((s) => s.isLoaded)
   const { data: me, isLoading: userLoading } = useCurrentUser()
-  
+
   const username = user?.username || me?.user.username || ''
   const { repositories, isLoading: reposLoading } = useRepositories(username)
   const { data: activityData, isLoading: activityLoading } = useUserActivity(username)
@@ -30,59 +30,55 @@ export function DashboardPage() {
   const stats = statsData?.success ? statsData.data : { repoCount: 0, commitsToday: 0, contributors: 0 }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-rs-border bg-rs-surface p-6">
-        {!authLoaded || userLoading ? (
-          <Skeleton className="size-14 rounded-full" />
-        ) : (
-          <Avatar className="size-14 border border-rs-border">
-            <AvatarImage src={user?.imageUrl ?? me?.user.imageUrl ?? undefined} />
-            <AvatarFallback>{displayName[0]}</AvatarFallback>
-          </Avatar>
-        )}
-        <div>
-          <h1 className="text-2xl font-semibold">Welcome back, {displayName}</h1>
-          <p className="text-sm text-muted-foreground">Here’s what’s happening across your repositories.</p>
+    <div className="app-page">
+      <section className="surface-panel overflow-hidden">
+        <div className="flex flex-wrap items-center gap-4 p-5">
+          {!authLoaded || userLoading ? (
+            <Skeleton className="size-14 rounded-full" />
+          ) : (
+            <Avatar className="size-14 border border-rs-border bg-rs-elevated">
+              <AvatarImage src={user?.imageUrl ?? me?.user.imageUrl ?? undefined} />
+              <AvatarFallback className="bg-rs-elevated text-lg font-semibold">{displayName[0]}</AvatarFallback>
+            </Avatar>
+          )}
+          <div className="min-w-0">
+            <h1 className="page-title">Welcome back, {displayName}</h1>
+            <p className="page-subtitle">Here is what is happening across your repositories.</p>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-rs-border bg-rs-surface">
-          <CardHeader className="pb-2">
-            <CardDescription>Repositories</CardDescription>
-            <CardTitle className="text-2xl">{reposLoading ? <Skeleton className="h-8 w-12" /> : stats.repoCount}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-rs-border bg-rs-surface">
-          <CardHeader className="pb-2">
-            <CardDescription>Commits today</CardDescription>
-            <CardTitle className="text-2xl">{statsLoading ? <Skeleton className="h-8 w-12" /> : stats.commitsToday}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-rs-border bg-rs-surface">
-          <CardHeader className="pb-2">
-            <CardDescription>Contributors</CardDescription>
-            <CardTitle className="text-2xl">{statsLoading ? <Skeleton className="h-8 w-12" /> : stats.contributors}</CardTitle>
-          </CardHeader>
-        </Card>
+        <StatCard
+          label="Repositories"
+          value={reposLoading ? <Skeleton className="h-8 w-12" /> : stats.repoCount}
+          icon={FolderGit2}
+        />
+        <StatCard
+          label="Commits today"
+          value={statsLoading ? <Skeleton className="h-8 w-12" /> : stats.commitsToday}
+          icon={GitBranchPlus}
+        />
+        <StatCard
+          label="Contributors"
+          value={statsLoading ? <Skeleton className="h-8 w-12" /> : stats.contributors}
+          icon={Users}
+        />
       </div>
 
-      <Card className="border-rs-border bg-rs-surface overflow-hidden">
+      <Card className="surface-panel overflow-hidden">
         <CardHeader className="pb-0">
-          <CardTitle className="text-base">Contribution activity</CardTitle>
+          <CardTitle className="text-base">Contribution Activity</CardTitle>
         </CardHeader>
-        <CardContent className="pt-4 pb-2">
-          <ContributionHeatmap 
-            data={contributions?.data} 
-            isLoading={isLoadingContributions} 
-          />
+        <CardContent className="pb-3 pt-4">
+          <ContributionHeatmap data={contributions?.data} isLoading={isLoadingContributions} />
         </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-rs-border bg-rs-surface lg:col-span-1">
+        <Card className="surface-panel">
           <CardHeader>
-            <CardTitle className="text-base">Recent repositories</CardTitle>
+            <CardTitle className="text-base">Recent Repositories</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {reposLoading ? (
@@ -94,9 +90,9 @@ export function DashboardPage() {
                 <Link
                   key={r.id}
                   to={`/${username}/${r.name}`}
-                  className="flex flex-col gap-1 rounded-md border border-transparent px-2 py-2 hover:border-rs-border hover:bg-rs-elevated/60"
+                  className="flex flex-col gap-1 rounded-md border border-transparent px-3 py-2 transition hover:border-rs-border hover:bg-rs-elevated/60"
                 >
-                  <span className="font-medium text-rs-link">
+                  <span className="truncate font-medium text-rs-link">
                     {username}/{r.name}
                   </span>
                   <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
@@ -109,9 +105,9 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-rs-border bg-rs-surface lg:col-span-1">
+        <Card className="surface-panel">
           <CardHeader>
-            <CardTitle className="text-base">Activity feed</CardTitle>
+            <CardTitle className="text-base">Activity Feed</CardTitle>
             <CardDescription>Latest commits from your repositories</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -121,10 +117,10 @@ export function DashboardPage() {
               <p className="text-sm text-muted-foreground">No recent activity.</p>
             ) : (
               activityList.map((a, i) => (
-                <div key={i}>
+                <div key={`${a.hash}-${i}`}>
                   <div className="flex gap-3">
-                    <Avatar className="size-9">
-                      <AvatarFallback>{a.user[0]?.toUpperCase()}</AvatarFallback>
+                    <Avatar className="size-9 bg-rs-elevated">
+                      <AvatarFallback className="bg-rs-elevated">{a.user[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm">
@@ -139,9 +135,7 @@ export function DashboardPage() {
                         <Badge variant="outline" className="font-mono text-xs">
                           {truncateHash(a.hash)}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatRelativeTime(a.time)}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{formatRelativeTime(a.time)}</span>
                       </div>
                     </div>
                   </div>
@@ -152,9 +146,9 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-rs-border bg-rs-surface lg:col-span-1">
+        <Card className="surface-panel">
           <CardHeader>
-            <CardTitle className="text-base">Quick actions</CardTitle>
+            <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <Button className="justify-start gap-2" variant="secondary" asChild>
@@ -185,5 +179,27 @@ export function DashboardPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string
+  value: ReactNode
+  icon: LucideIcon
+}) {
+  return (
+    <Card className="surface-panel">
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+        <CardDescription>{label}</CardDescription>
+        <Icon className="size-4 text-rs-link" />
+      </CardHeader>
+      <CardContent>
+        <CardTitle className="text-3xl">{value}</CardTitle>
+      </CardContent>
+    </Card>
   )
 }

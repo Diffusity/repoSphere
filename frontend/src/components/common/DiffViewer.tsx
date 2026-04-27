@@ -9,7 +9,7 @@ import type { DiffFile, DiffHunk, DiffLine } from '@/types'
 interface DiffViewerProps {
   files: DiffFile[]
   className?: string
-  /** Smaller padding and no view toggle — for inline previews. */
+  /** Smaller padding and no view toggle for inline previews. */
   variant?: 'default' | 'compact'
 }
 
@@ -93,7 +93,7 @@ function DiffFileBlock({
   const language = getLanguageFromPath(file.path)
 
   return (
-    <div className="overflow-hidden rounded-lg border border-rs-border bg-rs-surface">
+    <div className="overflow-hidden rounded-lg border border-rs-border/80 bg-rs-surface/90 shadow-sm shadow-black/20">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -106,7 +106,7 @@ function DiffFileBlock({
         <span className="min-w-0 flex-1 truncate font-mono text-sm">{file.path}</span>
         {statusBadge(file.status)}
         <span className="hidden text-xs text-muted-foreground sm:inline">
-          +{file.additions} −{file.deletions}
+          +{file.additions} -{file.deletions}
         </span>
       </button>
       {open && (

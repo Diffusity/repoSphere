@@ -27,30 +27,33 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-[60px] items-center gap-4 border-b border-rs-border bg-rs-bg/90 pl-14 pr-4 backdrop-blur md:pl-6 md:pr-6">
+    <header className="sticky top-0 z-30 flex h-[60px] items-center gap-4 border-b border-rs-border/80 bg-rs-bg/78 pl-14 pr-4 backdrop-blur-xl md:pl-6 md:pr-6">
       <div className="hidden flex-1 md:block" />
-      <div className="relative flex flex-1 md:max-w-md">
-        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search repositories…"
-          className="h-9 bg-rs-surface pl-9"
-          aria-label="Search"
-        />
-      </div>
+
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Notifications">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-foreground"
+          aria-label="Notifications"
+        >
           <Bell className="size-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-              <Avatar className="size-9 border border-rs-border">
+              <Avatar className="size-9 border border-rs-border bg-rs-elevated">
                 <AvatarImage src={user?.imageUrl ?? undefined} alt={user?.name ?? ''} />
-                <AvatarFallback>{user?.name?.[0] ?? 'U'}</AvatarFallback>
+                <AvatarFallback className="bg-rs-elevated text-sm font-semibold">
+                  {user?.name?.[0] ?? 'U'}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 border-rs-border bg-rs-surface">
+          <DropdownMenuContent
+            align="end"
+            className="w-56 border-rs-border bg-rs-surface shadow-xl shadow-black/30"
+          >
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{user?.name ?? 'Account'}</p>

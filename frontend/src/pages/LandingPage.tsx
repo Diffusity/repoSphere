@@ -1,26 +1,31 @@
-import { Code2 } from 'lucide-react'
+import { Code2, GitBranch, Globe2, ShieldCheck, Terminal } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import heroImage from '@/assets/hero.png'
 import { TerminalBlock } from '@/components/common/TerminalBlock'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/authStore'
 
 const features = [
   {
     title: 'CLI-first',
-    description: 'Work locally with `rs`—init, add, commit, diff, and log—then push context to the web.',
+    description: 'Work locally with rs commands, then push the repository context to the web.',
+    icon: Terminal,
   },
   {
     title: 'Web UI',
-    description: 'Browse trees, readme, and history in a GitHub-inspired interface.',
+    description: 'Browse trees, read files, and inspect commit history from a clean workspace.',
+    icon: Globe2,
   },
   {
     title: 'Secure auth',
-    description: 'Cookie-based web auth with terminal JWT handoff for the CLI—never mixed in one header.',
+    description: 'Cookie-based web auth and terminal handoff keep browser and CLI sessions separate.',
+    icon: ShieldCheck,
   },
   {
     title: 'Open protocol',
-    description: 'REST API designed for automation; repository APIs will land next.',
+    description: 'REST APIs are shaped for automation and repository workflows.',
+    icon: GitBranch,
   },
 ]
 
@@ -30,8 +35,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-rs-bg">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
-        <Link to="/" className="text-lg font-semibold">
+      <nav className="absolute inset-x-0 top-0 z-20 mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
+        <Link to="/" className="inline-flex items-center gap-2 text-lg font-semibold">
+          <span className="inline-flex size-8 items-center justify-center rounded-md border border-rs-border bg-rs-surface text-rs-accent">
+            <GitBranch className="size-4" />
+          </span>
           RepoSphere
         </Link>
         <div className="flex items-center gap-2">
@@ -46,9 +54,9 @@ export function LandingPage() {
             </>
           ) : (
             <>
-            <Button size="sm" variant="outline" asChild>
-              <Link to="/dashboard">Dashboard</Link>
-            </Button>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => void logout()}>
                 Sign out
               </Button>
@@ -57,17 +65,26 @@ export function LandingPage() {
         </div>
       </nav>
 
-      <section className="relative overflow-hidden border-y border-rs-border bg-linear-to-b from-[#161b22] via-rs-bg to-rs-bg px-4 py-20 md:px-8">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
-          <div>
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
-              Version Control, <span className="text-rs-link">Reimagined</span>
+      <section className="relative isolate overflow-hidden border-b border-rs-border px-4 pb-12 pt-28 md:px-8 md:pb-16 md:pt-32">
+        <div className="subtle-grid pointer-events-none absolute inset-0 opacity-70" />
+        <img
+          src={heroImage}
+          alt=""
+          className="pointer-events-none absolute right-[-3rem] top-20 z-[-1] w-[24rem] opacity-35 blur-[0.2px] sm:right-8 md:w-[30rem] lg:right-[10%] lg:opacity-55"
+        />
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-md border border-rs-border bg-rs-surface/80 px-3 py-1 text-xs font-medium text-muted-foreground">
+              <span className="size-2 rounded-full bg-rs-accent" />
+              Browser and terminal, one workspace
+            </div>
+            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground md:text-6xl">
+              RepoSphere
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              RepoSphere pairs a native <code className="rounded bg-rs-elevated px-1 font-mono text-sm">rs</code> CLI
-              with a modern web app—one model for local commits and collaborative browsing.
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+              A focused version-control workspace for local commits, repository browsing, and CLI authentication.
             </p>
-            <div className="mt-10 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               {!isSignedIn ? (
                 <Button size="lg" asChild>
                   <Link to="/sign-up">Get started</Link>
@@ -77,27 +94,36 @@ export function LandingPage() {
                   <Link to="/dashboard">Open dashboard</Link>
                 </Button>
               )}
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/cli-demo">CLI handoff</Link>
+              </Button>
             </div>
           </div>
+
           <TerminalBlock
             command={'commit -m "feat: initial"'}
             output={'Initialized empty RS repository in .rs/\n[master abc123f] feat: initial'}
             animate
-            className="shadow-2xl shadow-black/40"
+            className="mt-10 max-w-2xl"
           />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 md:px-8">
-        <h2 className="mb-8 text-2xl font-semibold">Built for builders</h2>
+      <section className="mx-auto max-w-6xl px-4 py-14 md:px-8">
+        <div className="page-heading mb-6">
+          <h2 className="page-title">Built For Builders</h2>
+          <p className="page-subtitle">A compact surface for the repository tasks you repeat every day.</p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f) => (
-            <Card key={f.title} className="border-rs-border bg-rs-surface">
+          {features.map(({ title, description, icon: Icon }) => (
+            <Card key={title} className="interactive-panel">
               <CardHeader>
-                <CardTitle className="text-base">{f.title}</CardTitle>
-                <CardDescription>{f.description}</CardDescription>
+                <span className="mb-2 inline-flex size-9 items-center justify-center rounded-md border border-rs-border bg-rs-bg text-rs-link">
+                  <Icon className="size-4" />
+                </span>
+                <CardTitle className="text-base">{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
               </CardHeader>
-              <CardContent />
             </Card>
           ))}
         </div>

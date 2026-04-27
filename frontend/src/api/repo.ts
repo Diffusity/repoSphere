@@ -6,7 +6,8 @@ import type {
   UserStats, 
   TreeEntry, 
   BlobResponse,
-  CommitSummary
+  Commit,
+  DiffFile
 } from '@/types'
 
 export interface BranchInfo {
@@ -120,7 +121,7 @@ export async function fetchCommits(
   page = 1,
   limit = 20
 ) {
-  const { data } = await client.get<ApiResponse<CommitSummary[]>>(
+  const { data } = await client.get<ApiResponse<Commit[]>>(
     `/api/v1/repo/${owner}/${name}/commits/${branch}?page=${page}&limit=${limit}`
   )
   return data
@@ -132,7 +133,7 @@ export async function fetchCommitDetail(
   name: string, 
   hash: string
 ) {
-  const { data } = await client.get<ApiResponse<any>>(
+  const { data } = await client.get<ApiResponse<Commit>>(
     `/api/v1/repo/${owner}/${name}/commit/${hash}`
   )
   return data
@@ -144,7 +145,7 @@ export async function fetchCommitDiff(
   name: string, 
   hash: string
 ) {
-  const { data } = await client.get<ApiResponse<any[]>>(
+  const { data } = await client.get<ApiResponse<DiffFile[]>>(
     `/api/v1/repo/${owner}/${name}/commit/${hash}/diff`
   )
   return data

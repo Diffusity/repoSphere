@@ -32,15 +32,15 @@ export function TerminalBlock({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-rs-border bg-[#0c0c0c] text-left shadow-lg',
+        'overflow-hidden rounded-lg border border-rs-border/80 bg-[#080d16] text-left shadow-2xl shadow-black/35',
         className
       )}
     >
-      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.02] px-3 py-2">
         <span className="size-2.5 rounded-full bg-red-500/90" />
         <span className="size-2.5 rounded-full bg-amber-400/90" />
         <span className="size-2.5 rounded-full bg-emerald-500/90" />
-        <span className="ml-2 text-xs text-white/40">terminal</span>
+        <span className="ml-2 text-xs text-white/40">rs terminal</span>
       </div>
       <div className="p-4 font-mono text-sm leading-relaxed text-emerald-100/95">
         <div>

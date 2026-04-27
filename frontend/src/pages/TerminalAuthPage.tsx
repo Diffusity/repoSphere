@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Loader2, Terminal, XCircle } from 'lucide-react'
+import { CheckCircle2, Copy, Loader2, Terminal, XCircle } from 'lucide-react'
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { completeTerminalSession } from '@/api/auth'
@@ -19,6 +19,7 @@ export function TerminalAuthPage() {
 
   const [status, setStatus] = React.useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = React.useState<string | null>(null)
+  const [copied, setCopied] = React.useState(false)
 
   const handleAuth = React.useCallback(async () => {
     if (!token) {
@@ -55,6 +56,16 @@ export function TerminalAuthPage() {
     loginWithGoogle(redirectTo)
   }
 
+  const copyLoginCommand = async () => {
+    try {
+      await navigator.clipboard.writeText('rs login')
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   return (
     <AuthShell
       badge="CLI handoff"
@@ -70,41 +81,47 @@ export function TerminalAuthPage() {
             This tab is authorizing a one-time terminal session. Keep your terminal open until the handoff completes.
           </AuthAlert>
         ) : (
-          <AuthAlert tone="danger">This authorization link is missing the session token from your CLI flow.</AuthAlert>
+          <AuthAlert>Open this page from the CLI after running rs login, or copy the command below.</AuthAlert>
         )
       }
     >
       {!token ? (
         <div className="space-y-4">
-          <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 p-4 text-sm leading-6 text-rose-100">
+          <div className="rounded-lg border border-rs-border bg-rs-bg/45 p-4 text-sm leading-6 text-slate-300">
             <div className="flex items-start gap-4">
-              <AlertCircle className="mt-0.5 size-5 shrink-0" />
+              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
+                <Terminal className="size-5" />
+              </span>
               <div>
-                <p className="font-medium text-white">Invalid terminal request</p>
-                <p className="mt-1.5">Restart CLI login to generate a new browser authorization link.</p>
+                <p className="font-medium text-white">Start from your terminal</p>
+                <p className="mt-1.5">
+                  Run <span className="font-mono text-slate-100">rs login</span> to generate a one-time browser
+                  authorization link.
+                </p>
               </div>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <AuthActionButton type="button" onClick={() => navigate('/')}>
-              Return home
+            <AuthActionButton type="button" onClick={copyLoginCommand}>
+              <Copy className="size-4" />
+              {copied ? 'Copied' : 'Copy command'}
             </AuthActionButton>
             <Button
               type="button"
               variant="outline"
-              className="h-12 rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
-              onClick={() => window.location.reload()}
+              className="h-12 rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
+              onClick={() => navigate('/sign-in')}
             >
-              Refresh page
+              Sign in
             </Button>
           </div>
         </div>
       ) : !isSignedIn ? (
         <div className="space-y-4">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-lg border border-rs-border bg-rs-bg/45 p-4">
             <div className="flex items-start gap-4">
-              <span className="inline-flex size-11 items-center justify-center rounded-2xl border border-sky-300/20 bg-sky-400/10 text-sky-200">
+              <span className="inline-flex size-11 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
                 <Terminal className="size-5" />
               </span>
               <div className="space-y-2 text-sm leading-6 text-slate-300">
@@ -121,7 +138,7 @@ export function TerminalAuthPage() {
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+            className="h-12 w-full rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
             onClick={onGoogle}
           >
             Continue with Google
@@ -130,8 +147,8 @@ export function TerminalAuthPage() {
       ) : (
         <div className="space-y-4">
           {(status === 'idle' || status === 'loading') && (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-center">
-              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-2xl border border-sky-300/20 bg-sky-400/10 text-sky-200">
+            <div className="rounded-lg border border-rs-border bg-rs-bg/45 p-5 text-center">
+              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
                 <Loader2 className="size-6 animate-spin" />
               </div>
               <p className="mt-3 text-lg font-medium text-white">Authorizing your terminal...</p>
@@ -140,8 +157,8 @@ export function TerminalAuthPage() {
           )}
 
           {status === 'success' && (
-            <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-5 text-center">
-              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
+            <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-5 text-center">
+              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
                 <CheckCircle2 className="size-7" />
               </div>
               <p className="mt-3 text-lg font-medium text-white">Terminal session authorized</p>
@@ -150,8 +167,8 @@ export function TerminalAuthPage() {
           )}
 
           {status === 'error' && (
-            <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 p-5 text-center">
-              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-2xl border border-rose-300/20 bg-rose-400/10 text-rose-200">
+            <div className="rounded-lg border border-rose-400/20 bg-rose-400/10 p-5 text-center">
+              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-lg border border-rose-300/20 bg-rose-400/10 text-rose-200">
                 <XCircle className="size-7" />
               </div>
               <p className="mt-3 text-lg font-medium text-white">Authorization failed</p>
@@ -167,7 +184,7 @@ export function TerminalAuthPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 rounded-2xl border-white/10 bg-white/[0.03] text-slate-100 hover:bg-white/[0.06]"
+                className="h-12 rounded-md border-rs-border bg-rs-bg/45 text-slate-100 hover:bg-rs-elevated"
                 onClick={() => navigate('/dashboard')}
               >
                 Open dashboard

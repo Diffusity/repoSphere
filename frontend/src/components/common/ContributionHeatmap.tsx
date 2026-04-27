@@ -100,23 +100,23 @@ export function ContributionHeatmap({ data, isLoading }: Props) {
 
   const getColor = (level: number) => {
     switch (level) {
-      case 1: return 'bg-[#0e4429]'
-      case 2: return 'bg-[#006d32]'
-      case 3: return 'bg-[#26a641]'
-      case 4: return 'bg-[#39d353]'
-      default: return 'bg-[#161b22]'
+      case 1: return 'bg-emerald-950'
+      case 2: return 'bg-emerald-800'
+      case 3: return 'bg-emerald-500'
+      case 4: return 'bg-lime-300'
+      default: return 'bg-rs-elevated'
     }
   }
 
   if (isLoading) {
     return (
-      <div className="w-full h-[180px] bg-rs-surface animate-pulse rounded-md border border-rs-border" />
+      <div className="h-[180px] w-full animate-pulse rounded-lg border border-rs-border bg-rs-surface" />
     )
   }
 
   return (
-    <div ref={containerRef} className="rounded-md border border-rs-border bg-rs-surface/50 p-6">
-      <div className="flex flex-col gap-1 items-center"> {/* Center horizontally */}
+    <div ref={containerRef} className="rounded-lg border border-rs-border/80 bg-rs-surface/70 p-5">
+      <div className="flex flex-col items-center gap-1">
         <div className="w-full overflow-x-auto pb-4 scrollbar-none">
           <div className="flex justify-center"> {/* Center the inner content */}
             <TooltipProvider delayDuration={0}>
@@ -159,9 +159,9 @@ export function ContributionHeatmap({ data, isLoading }: Props) {
                               )}
                             />
                           </TooltipTrigger>
-                          <TooltipContent 
+                    <TooltipContent 
                             side="top" 
-                            className="bg-[#161b22] border-rs-border border text-foreground text-[12px] px-3 py-1.5 shadow-2xl z-[100]"
+                            className="z-[100] border border-rs-border bg-rs-surface px-3 py-1.5 text-[12px] text-foreground shadow-2xl"
                           >
                             <span className="font-semibold">{cell.count === 0 ? 'No' : cell.count}</span> {cell.count === 1 ? 'contribution' : 'contributions'} on {format(cell.date, 'MMM d, yyyy')}
                           </TooltipContent>
@@ -175,15 +175,15 @@ export function ContributionHeatmap({ data, isLoading }: Props) {
           </div>
         </div>
         
-        <div className="flex w-full items-center justify-between text-[11px] text-muted-foreground mt-2 max-w-[800px]">
+        <div className="mt-2 flex w-full max-w-[800px] items-center justify-between text-[11px] text-muted-foreground">
           <p>{totalCommits} contributions in the last year</p>
           <div className="flex items-center gap-[4px]">
             <span className="mr-1">Less</span>
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#161b22]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#0e4429]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#006d32]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#26a641]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#39d353]" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-rs-elevated" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-emerald-950" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-emerald-800" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-emerald-500" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-lime-300" />
             <span className="ml-1">More</span>
           </div>
         </div>
