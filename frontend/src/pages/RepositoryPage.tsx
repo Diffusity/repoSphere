@@ -56,6 +56,7 @@ import { IssueDetail } from '@/components/repo/IssueDetail'
 import { NewIssueForm } from '@/components/repo/NewIssueForm'
 import { RepoSettings } from '@/components/repo/RepoSettings'
 import { PullRequestList } from '@/components/repo/PullRequestList'
+import { PullRequestDetail } from '@/components/repo/PullRequestDetail'
 import { usePullRequests } from '@/hooks/useRepository'
 
 export function RepositoryPage() {
@@ -101,6 +102,8 @@ export function RepositoryPage() {
   const isNewIssue = location.pathname.endsWith('/issues/new')
   const issueMatch = location.pathname.match(/\/issues\/(\d+)/)
   const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null
+  const pullMatch = location.pathname.match(/\/pulls\/(\d+)/)
+  const pullNumber = pullMatch ? parseInt(pullMatch[1], 10) : null
 
   const { data: issuesCountRes } = useIssues(username, repoName, 'open', undefined, 1, 0)
   const openIssueCount = issuesCountRes?.success ? issuesCountRes.data.openCount : 0
@@ -318,7 +321,7 @@ export function RepositoryPage() {
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 
-          active={!isCommitsTab && !isIssuesTab && !isSettingsTab} 
+          active={!isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab} 
           icon={Code} 
           label="Code" 
           to={`/${username}/${repoName}/tree/${branch}`} 
@@ -358,7 +361,7 @@ export function RepositoryPage() {
         )}
       </nav>
 
-      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
+      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab && !isPullsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
@@ -371,7 +374,11 @@ export function RepositoryPage() {
               <IssuesList username={username} repoName={repoName} />
             )
           ) : isPullsTab ? (
-            <PullRequestList username={username} repoName={repoName} />
+            pullNumber ? (
+              <PullRequestDetail username={username} repoName={repoName} pullNumber={pullNumber} />
+            ) : (
+              <PullRequestList username={username} repoName={repoName} />
+            )
           ) : isSettingsTab ? (
             <RepoSettings username={username} repoName={repoName} />
           ) : (

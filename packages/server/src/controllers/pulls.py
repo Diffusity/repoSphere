@@ -119,3 +119,43 @@ async def merge_pull_request(owner: str, name: str, number: int, current_user: U
         return {"success": True, "message": "Successfully merged", "data": pr.to_dict()}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+async def update_pull_request(
+    owner: str,
+    name: str,
+    number: int,
+    status: str | None,
+    current_user: User,
+    db: AsyncSession
+):
+    result = await db.execute(
+        select(PullRequest)
+        .join(Repository)
+        .join(User, Repository.owner_id == User.id)
+        .where(User.username == owner, Repository.name == name, PullRequest.number == number)
+    )
+    pr = result.scalar_one_or_none()
+    if not pr:
+        raise HTTPException(status_code=404, detail="Pull request not found")
+
+    # Only author or repo owner can close/reopen
+    # (Assuming repository owner can also manage PRs)
+    repo_owner_res = await db.execute(select(Repository).where(Repository.id == pr.repo_id))
+    repo = repo_owner_res.scalar_one()
+    
+    if pr.author_id != current_user.id and repo.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this pull request")
+
+    if status:
+        if status not in ["open", "closed", "merged"]:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Prevent manual "merged" status setting without actual merge
+        if status == "merged" and pr.status != "merged":
+            raise HTTPException(status_code=400, detail="Use the merge endpoint to merge pull requests")
+            
+        pr.status = status
+
+    await db.commit()
+    await db.refresh(pr)
+    return {"success": True, "data": pr.to_dict()}

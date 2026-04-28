@@ -251,3 +251,21 @@ export async function mergePullRequest(client: AxiosInstance, owner: string, nam
   const { data } = await client.post<ApiResponse<PullRequest>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls/${number}/merge`)
   return data
 }
+
+export async function updatePullRequest(
+  client: AxiosInstance,
+  owner: string,
+  name: string,
+  number: number,
+  payload: { status?: 'open' | 'closed' }
+) {
+  const formData = new FormData()
+  if (payload.status) formData.append('status', payload.status)
+
+  const { data } = await client.patch<ApiResponse<PullRequest>>(
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls/${number}`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  )
+  return data
+}

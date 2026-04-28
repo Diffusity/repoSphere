@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ChevronLeft, GitPullRequest, ArrowRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

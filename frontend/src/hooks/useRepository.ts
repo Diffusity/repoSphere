@@ -19,7 +19,8 @@ import {
   createPullRequest,
   fetchPullRequests,
   fetchPullRequestDetail,
-  mergePullRequest
+  mergePullRequest,
+  updatePullRequest
 } from '@/api/repo'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
@@ -265,6 +266,29 @@ export function useMergePullRequest() {
       queryClient.invalidateQueries({ queryKey: ['pulls', variables.owner, variables.name] })
       queryClient.invalidateQueries({ queryKey: ['branches', variables.owner, variables.name] })
       queryClient.invalidateQueries({ queryKey: ['commits', variables.owner, variables.name] })
+    },
+  })
+}
+
+export function useUpdatePullRequest() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ 
+      owner, 
+      name, 
+      number, 
+      payload 
+    }: { 
+      owner: string; 
+      name: string; 
+      number: number; 
+      payload: { status?: 'open' | 'closed' } 
+    }) => updatePullRequest(client, owner, name, number, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pull', variables.owner, variables.name, variables.number] })
+      queryClient.invalidateQueries({ queryKey: ['pulls', variables.owner, variables.name] })
     },
   })
 }

@@ -56,3 +56,14 @@ async def merge_pull_request(
     db: AsyncSession = Depends(get_db),
 ):
     return await pulls_controller.merge_pull_request(owner, name, number, current_user, db)
+
+@router.patch("/{owner}/{name}/pulls/{number}")
+async def update_pull_request(
+    owner: str,
+    name: str,
+    number: int,
+    status: str | None = Form(None),
+    current_user: User = Depends(auth_middleware),
+    db: AsyncSession = Depends(get_db),
+):
+    return await pulls_controller.update_pull_request(owner, name, number, status, current_user, db)
