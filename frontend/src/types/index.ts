@@ -77,9 +77,11 @@ export interface Repository {
 
 export interface Commit extends CommitSummary {
   description?: string
-  parent: string
-  authorEmail: string
-  filesChanged: { path: string; status: 'added' | 'modified' | 'deleted' }[]
+  parent_hash: string
+  isMerge?: boolean
+  parents?: string[]
+  authorEmail?: string
+  filesChanged?: { path: string; status: 'added' | 'modified' | 'deleted' }[]
   tree?: TreeEntry[]
 }
 
@@ -151,4 +153,25 @@ export interface IssuesListData {
   page: number
   totalPages: number
   total: number
+}
+
+export interface PullRequest {
+  id: string
+  repoId: string
+  authorId: string
+  authorUsername: string
+  number: number
+  title: string
+  description: string | null
+  baseBranch: string
+  compareBranch: string
+  status: 'open' | 'closed' | 'merged'
+  mergeCommitHash: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PullRequestDetail extends PullRequest {
+  isMergeable: boolean
+  conflicts: string[]
 }

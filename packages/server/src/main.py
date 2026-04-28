@@ -10,6 +10,7 @@ from src.db.database import init_db
 from src.routes.auth import router as auth_router
 from src.routes.repo import router as repo_router
 from src.routes.issues import router as issues_router
+from src.routes.pulls import router as pulls_router
 
 
 @asynccontextmanager
@@ -29,13 +30,23 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Catch unhandled exceptions and return a proper JSONResponse so that
-    CORSMiddleware can attach the required CORS headers to the response."""
+    """Catch unhandled exceptions and return a proper JSONResponse."""
     traceback.print_exc()
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={"success": False, "detail": "Internal server error"},
     )
+    # Manually add CORS headers to ensure they are present even on errors
+    origin = request.headers.get("origin")
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # --- CORS ---
 app.add_middleware(
@@ -63,6 +74,7 @@ async def health():
 app.include_router(auth_router)
 app.include_router(issues_router)
 app.include_router(repo_router)
+app.include_router(pulls_router)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Diffusity/repoSphere/internal/storage"
+	"github.com/Diffusity/repoSphere/internal/types"
 	"github.com/Diffusity/repoSphere/utils"
 )
 
@@ -153,8 +154,18 @@ func Checkout(name string) {
 	targetHash := strings.TrimSpace(string(branchHash))
 
 	if targetHash != "" && targetHash != "0000000000000000000000000000000000000000" {
+		// Resolve commit to tree
+		commit, err := loadCommitData(targetHash)
+		var targetTreeHash string
+		if err != nil {
+			// Fallback: maybe it's already a tree hash (old versions)
+			targetTreeHash = targetHash
+		} else {
+			targetTreeHash = commit.Tree
+		}
+
 		// Load the target commit's tree
-		targetTreeEntries, err := loadTreeData(targetHash)
+		targetTreeEntries, err := loadTreeData(targetTreeHash)
 		if err != nil {
 			fmt.Printf("Warning: Could not load target tree: %v\n", err)
 		} else {
@@ -192,19 +203,45 @@ func getCurrentTreeEntries(repoRoot string) map[string]string {
 	return entries
 }
 
-// loadTreeData loads a commit's tree object and returns file_path -> blob_hash.
-// The commit hash points to a tree object stored in .rs/objects/.
-func loadTreeData(commitTreeHash string) (map[string]string, error) {
-	dataStr, err := storage.LoadObject(commitTreeHash)
+// loadCommitData loads a commit object from .rs/objects/.
+func loadCommitData(hash string) (*types.Commit, error) {
+	dataStr, err := storage.LoadObject(hash)
 	if err != nil {
-		return nil, fmt.Errorf("could not load tree object %s: %v", commitTreeHash, err)
+		return nil, err
+	}
+	var commit types.Commit
+	if err := json.Unmarshal([]byte(dataStr), &commit); err != nil {
+		return nil, err
+	}
+	return &commit, nil
+}
+
+// loadTreeDataObj loads a tree object as a Tree struct.
+func loadTreeDataObj(hash string) (*Tree, error) {
+	dataStr, err := storage.LoadObject(hash)
+	if err != nil {
+		return nil, err
 	}
 
 	var tree Tree
 	if err := json.Unmarshal([]byte(dataStr), &tree); err != nil {
-		return nil, fmt.Errorf("could not parse tree object %s: %v", commitTreeHash, err)
+		// If parsing as Tree fails, try parsing as Commit
+		var commit types.Commit
+		if err2 := json.Unmarshal([]byte(dataStr), &commit); err2 == nil {
+			// It's a commit, load its tree
+			return loadTreeDataObj(commit.Tree)
+		}
+		return nil, fmt.Errorf("could not parse object %s as Tree or Commit: %v", hash, err)
 	}
+	return &tree, nil
+}
 
+// loadTreeData loads a commit's tree object and returns file_path -> blob_hash.
+func loadTreeData(commitTreeHash string) (map[string]string, error) {
+	tree, err := loadTreeDataObj(commitTreeHash)
+	if err != nil {
+		return nil, err
+	}
 	return tree.Entries, nil
 }
 

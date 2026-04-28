@@ -7,7 +7,9 @@ import type {
   TreeEntry, 
   BlobResponse,
   Commit,
-  DiffFile
+  DiffFile,
+  PullRequest,
+  PullRequestDetail
 } from '@/types'
 
 export interface BranchInfo {
@@ -29,19 +31,19 @@ export async function createRepository(
 }
 
 export async function fetchUserRepositories(client: AxiosInstance, username: string) {
-  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${username}`)
+  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${encodeURIComponent(username)}`)
   return data
 }
 
 export async function fetchUserActivity(client: AxiosInstance, username: string, limit = 10) {
   const { data } = await client.get<ApiResponse<ActivityItem[]>>(
-    `/api/v1/repo/user-repos/${username}/activity?limit=${limit}`
+    `/api/v1/repo/user-repos/${encodeURIComponent(username)}/activity?limit=${limit}`
   )
   return data
 }
 
 export async function fetchUserStats(client: AxiosInstance, username: string) {
-  const { data } = await client.get<ApiResponse<UserStats>>(`/api/v1/repo/user-repos/${username}/stats`)
+  const { data } = await client.get<ApiResponse<UserStats>>(`/api/v1/repo/user-repos/${encodeURIComponent(username)}/stats`)
   return data
 }
 
@@ -54,7 +56,7 @@ export interface ContributionData {
 
 export async function fetchUserContributions(client: AxiosInstance, username: string) {
   const { data } = await client.get<ApiResponse<ContributionData>>(
-    `/api/v1/repo/user-repos/${username}/contributions`
+    `/api/v1/repo/user-repos/${encodeURIComponent(username)}/contributions`
   )
   return data
 }
@@ -75,7 +77,7 @@ export async function fetchExploreRepositories(
 }
 
 export async function fetchRepository(client: AxiosInstance, owner: string, name: string) {
-  const { data } = await client.get<ApiResponse<Repository>>(`/api/v1/repo/${owner}/${name}`)
+  const { data } = await client.get<ApiResponse<Repository>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`)
   return data
 }
 
@@ -87,15 +89,15 @@ export async function fetchRepositoryTree(
   path = ''
 ) {
   const url = path 
-    ? `/api/v1/repo/${owner}/${name}/tree/${branch}/${path}`
-    : `/api/v1/repo/${owner}/${name}/tree/${branch}`
+    ? `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tree/${encodeURIComponent(branch)}/${path}`
+    : `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tree/${encodeURIComponent(branch)}`
   const { data } = await client.get<ApiResponse<TreeEntry[]>>(url)
   return data
 }
 
 export async function fetchBranches(client: AxiosInstance, owner: string, name: string) {
   const { data } = await client.get<ApiResponse<BranchInfo[]>>(
-    `/api/v1/repo/${owner}/${name}/branches`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/branches`
   )
   return data
 }
@@ -108,7 +110,7 @@ export async function fetchBlobContent(
   path: string
 ) {
   const { data } = await client.get<ApiResponse<BlobResponse>>(
-    `/api/v1/repo/${owner}/${name}/blob/${branch}/${path}`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/blob/${encodeURIComponent(branch)}/${path}`
   )
   return data
 }
@@ -122,7 +124,7 @@ export async function fetchCommits(
   limit = 20
 ) {
   const { data } = await client.get<ApiResponse<Commit[]>>(
-    `/api/v1/repo/${owner}/${name}/commits/${branch}?page=${page}&limit=${limit}`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/commits/${encodeURIComponent(branch)}?page=${page}&limit=${limit}`
   )
   return data
 }
@@ -134,7 +136,7 @@ export async function fetchCommitDetail(
   hash: string
 ) {
   const { data } = await client.get<ApiResponse<Commit>>(
-    `/api/v1/repo/${owner}/${name}/commit/${hash}`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/commit/${hash}`
   )
   return data
 }
@@ -146,13 +148,13 @@ export async function fetchCommitDiff(
   hash: string
 ) {
   const { data } = await client.get<ApiResponse<DiffFile[]>>(
-    `/api/v1/repo/${owner}/${name}/commit/${hash}/diff`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/commit/${hash}/diff`
   )
   return data
 }
 
 export async function deleteRepository(client: AxiosInstance, owner: string, name: string) {
-  const { data } = await client.delete<ApiResponse<void>>(`/api/v1/repo/${owner}/${name}`)
+  const { data } = await client.delete<ApiResponse<void>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`)
   return data
 }
 
@@ -168,7 +170,7 @@ export async function updateRepository(
   }
 ) {
   const { data } = await client.patch<ApiResponse<Repository>>(
-    `/api/v1/repo/${owner}/${name}`,
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
     payload
   )
   return data
@@ -181,7 +183,7 @@ export async function confirmDeleteRepository(
   confirmationName: string
 ) {
   const { data } = await client.post<ApiResponse<void>>(
-    `/api/v1/repo/${owner}/${name}/confirm-delete`,
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/confirm-delete`,
     { confirmation_name: confirmationName }
   )
   return data
@@ -189,26 +191,63 @@ export async function confirmDeleteRepository(
 
 export async function toggleStar(client: AxiosInstance, owner: string, name: string) {
   const { data } = await client.post<ApiResponse<{ starred: boolean; stars: number }>>(
-    `/api/v1/repo/${owner}/${name}/star`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/star`
   )
   return data
 }
 
 export async function checkStar(client: AxiosInstance, owner: string, name: string) {
   const { data } = await client.get<ApiResponse<{ starred: boolean; stars: number }>>(
-    `/api/v1/repo/${owner}/${name}/star`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/star`
   )
   return data
 }
 
 export async function forkRepository(client: AxiosInstance, owner: string, name: string) {
   const { data } = await client.post<ApiResponse<Repository>>(
-    `/api/v1/repo/${owner}/${name}/fork`
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/fork`
   )
   return data
 }
 
 export async function fetchStarredRepositories(client: AxiosInstance, username: string) {
-  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${username}/starred`)
+  const { data } = await client.get<ApiResponse<Repository[]>>(`/api/v1/repo/user-repos/${encodeURIComponent(username)}/starred`)
+  return data
+}
+
+// --- Pull Requests ---
+
+export async function createPullRequest(
+  client: AxiosInstance,
+  owner: string,
+  name: string,
+  payload: { title: string; description: string; base_branch: string; compare_branch: string }
+) {
+  const formData = new FormData()
+  formData.append('title', payload.title)
+  formData.append('description', payload.description || '')
+  formData.append('base_branch', payload.base_branch)
+  formData.append('compare_branch', payload.compare_branch)
+
+  const { data } = await client.post<ApiResponse<PullRequest>>(
+    `/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  )
+  return data
+}
+
+export async function fetchPullRequests(client: AxiosInstance, owner: string, name: string) {
+  const { data } = await client.get<ApiResponse<PullRequest[]>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls`)
+  return data
+}
+
+export async function fetchPullRequestDetail(client: AxiosInstance, owner: string, name: string, number: number) {
+  const { data } = await client.get<ApiResponse<PullRequestDetail>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls/${number}`)
+  return data
+}
+
+export async function mergePullRequest(client: AxiosInstance, owner: string, name: string, number: number) {
+  const { data } = await client.post<ApiResponse<PullRequest>>(`/api/v1/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls/${number}/merge`)
   return data
 }

@@ -526,8 +526,9 @@ async def list_commits(
         if not commit.parent_hash:
             break
             
+        primary_parent = commit.parent_hash.split(",")[0].strip()
         p_res = await db.execute(
-            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == commit.parent_hash)
+            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == primary_parent)
         )
         current_commit_id = p_res.scalar_one_or_none()
 
@@ -597,6 +598,8 @@ async def get_commit_detail(
     if not commit:
         raise HTTPException(status_code=404, detail="Commit not found")
 
+    parent_hashes = commit.parent_hash.split(",") if commit.parent_hash else []
+    
     return {
         "success": True,
         "data": {
@@ -605,6 +608,8 @@ async def get_commit_detail(
             "author": commit.author,
             "timestamp": commit.timestamp.isoformat(),
             "parent_hash": commit.parent_hash,
+            "isMerge": len(parent_hashes) > 1,
+            "parents": [h.strip() for h in parent_hashes],
         },
     }
 
@@ -638,8 +643,9 @@ async def get_commit_diff(
     # 3. Get Parent Commit Tree Entries
     parent_entries = {}
     if commit.parent_hash:
+        primary_parent = commit.parent_hash.split(",")[0].strip()
         parent_commit_res = await db.execute(
-            select(Commit).where(Commit.repo_id == repo_id, Commit.hash == commit.parent_hash)
+            select(Commit).where(Commit.repo_id == repo_id, Commit.hash == primary_parent)
         )
         parent_commit = parent_commit_res.scalar_one_or_none()
         if parent_commit:
@@ -950,8 +956,9 @@ async def pull(
             break
             
         # Find parent commit ID
+        primary_parent = commit.parent_hash.split(",")[0].strip()
         p_res = await db.execute(
-            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == commit.parent_hash)
+            select(Commit.id).where(Commit.repo_id == repo.id, Commit.hash == primary_parent)
         )
         current_commit_id = p_res.scalar_one_or_none()
         

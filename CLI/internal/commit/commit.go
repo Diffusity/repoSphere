@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Diffusity/repoSphere/internal/repo"
@@ -73,11 +74,16 @@ func CreateCommit(message string) (string, error) {
 
 	commits = append(commits, commit)
 
-	commitsData, _ := json.Marshal(commits)
-
+	commitsData, _ := json.MarshalIndent(commits, "", "  ")
 	err = os.WriteFile(parentLogFilePath, commitsData, 0644)
 	if err != nil {
 		return "", err
+	}
+
+	// Also store the commit object itself in the object store
+	commitObjDelta, _ := json.MarshalIndent(commit, "", "  ")
+	if err := storage.WriteObject(commitHash, commitObjDelta); err != nil {
+		return "", fmt.Errorf("error storing commit object: %v", err)
 	}
 
 	err = os.WriteFile(parentFilePath, []byte(commitHash), 0644)
@@ -120,7 +126,15 @@ func LogCommits() {
 	for i := 0; i < len(commits); i++ {
 		commit := commits[i]
 
-		fmt.Printf("commit %s\n", commit.Tree)
+		if strings.Contains(commit.Parent, ",") {
+			fmt.Printf("commit %s [MERGE]\n", commit.Tree)
+			parents := strings.Split(commit.Parent, ",")
+			if len(parents) >= 2 {
+				fmt.Printf("Merge: %s + %s\n", parents[0][:8], parents[1][:8])
+			}
+		} else {
+			fmt.Printf("commit %s\n", commit.Tree)
+		}
 		fmt.Printf("Author: %s\n", commit.Author)
 		fmt.Printf("Date:   %s\n", commit.Timestamp.Format("Mon Jan 2 15:04:05 2006 -0700"))
 		fmt.Printf("\n    %s\n\n", commit.Message)
@@ -153,7 +167,12 @@ func ShowCommit(hash string) {
 		return
 	}
 
-	parentCommitData, err := storage.LoadObject(tree.Parent)
+	parentHash := tree.Parent
+	if strings.Contains(parentHash, ",") {
+		parentHash = strings.Split(parentHash, ",")[0]
+	}
+
+	parentCommitData, err := storage.LoadObject(parentHash)
 	if err != nil {
 		fmt.Println("Error loading parent commit:", err)
 		return
@@ -250,7 +269,12 @@ func ShowCommitExpanded(hash string) {
 		return
 	}
 
-	parentCommitData, err := storage.LoadObject(tree.Parent)
+	parentHash := tree.Parent
+	if strings.Contains(parentHash, ",") {
+		parentHash = strings.Split(parentHash, ",")[0]
+	}
+
+	parentCommitData, err := storage.LoadObject(parentHash)
 	if err != nil {
 		fmt.Println("Error loading parent commit:", err)
 		return

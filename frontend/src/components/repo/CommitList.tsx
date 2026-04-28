@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { CommitHash } from '@/components/common/CommitHash'
 import { DiffViewer } from '@/components/common/DiffViewer'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCommitDate, formatRelativeTime } from '@/lib/utils'
 import { useCommitDiff, useCommits } from '@/hooks/useRepository'
@@ -109,7 +110,14 @@ function CommitListItem({
             <AvatarFallback className="bg-rs-accent text-white">{c.author[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="font-medium leading-snug text-white">{c.message}</p>
+            <p className="flex items-center gap-2 font-medium leading-snug text-white">
+              {c.message}
+              {c.isMerge && (
+                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
+                  Merge
+                </Badge>
+              )}
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
               <span className="font-semibold text-gray-300">{c.author}</span> committed {formatRelativeTime(c.timestamp)}
             </p>

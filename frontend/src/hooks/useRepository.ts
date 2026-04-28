@@ -15,7 +15,11 @@ import {
   fetchBranches,
   toggleStar,
   checkStar,
-  forkRepository
+  forkRepository,
+  createPullRequest,
+  fetchPullRequests,
+  fetchPullRequestDetail,
+  mergePullRequest
 } from '@/api/repo'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
@@ -203,6 +207,64 @@ export function useForkRepository() {
       forkRepository(client, owner, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
+    },
+  })
+}
+
+// --- Pull Request Hooks ---
+
+export function usePullRequests(owner: string, name: string) {
+  const client = useApiClient()
+
+  return useQuery({
+    queryKey: ['pulls', owner, name],
+    queryFn: () => fetchPullRequests(client, owner, name),
+    enabled: !!owner && !!name,
+  })
+}
+
+export function usePullRequestDetail(owner: string, name: string, number: number) {
+  const client = useApiClient()
+
+  return useQuery({
+    queryKey: ['pull', owner, name, number],
+    queryFn: () => fetchPullRequestDetail(client, owner, name, number),
+    enabled: !!owner && !!name && !!number,
+  })
+}
+
+export function useCreatePullRequest() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ 
+      owner, 
+      name, 
+      payload 
+    }: { 
+      owner: string; 
+      name: string; 
+      payload: { title: string; description: string; base_branch: string; compare_branch: string } 
+    }) => createPullRequest(client, owner, name, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pulls', variables.owner, variables.name] })
+    },
+  })
+}
+
+export function useMergePullRequest() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ owner, name, number }: { owner: string; name: string; number: number }) =>
+      mergePullRequest(client, owner, name, number),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pull', variables.owner, variables.name, variables.number] })
+      queryClient.invalidateQueries({ queryKey: ['pulls', variables.owner, variables.name] })
+      queryClient.invalidateQueries({ queryKey: ['branches', variables.owner, variables.name] })
+      queryClient.invalidateQueries({ queryKey: ['commits', variables.owner, variables.name] })
     },
   })
 }
