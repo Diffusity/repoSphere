@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { GitPullRequest, GitMerge, Loader2, AlertCircle, CheckCircle2, CircleDot, History, Trash2, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -6,7 +6,6 @@ import { usePullRequestDetail, useMergePullRequest, useUpdatePullRequest, useRep
 import { formatRelativeTime, cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { format } from 'date-fns'
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -17,7 +16,6 @@ interface PullRequestDetailProps {
 }
 
 export function PullRequestDetail({ username, repoName, pullNumber }: PullRequestDetailProps) {
-  const navigate = useNavigate()
   const currentUser = useAuthStore(s => s.user)
   
   const { data: repoRes } = useRepository(username, repoName)
