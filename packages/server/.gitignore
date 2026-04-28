@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 .env
 .env.local
+list_all_repos.py

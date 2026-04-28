@@ -13,12 +13,13 @@ import {
   Settings,
   Star,
   Loader2,
+  CircleDot,
   type LucideIcon,
 } from 'lucide-react'
 import { Fragment, useMemo } from 'react'
 import { Link, useLocation, useParams, useNavigate } from 'react-router-dom'
 import { RepositoryEntries } from '@/components/common/RepositoryEntries'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { MarkdownRenderer } from '@/components/common/MarkdownRenderer'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,11 +41,19 @@ import {
   useRepositoryTree, 
   useBlobContent, 
   useCommits,
-  useBranches
+  useBranches,
+  useStarStatus,
+  useToggleStar,
+  useForkRepository
 } from '@/hooks/useRepository'
+import { useIssues } from '@/hooks/useIssues'
 import { getLanguageFromPath, highlightLines } from '@/lib/highlight'
 import { useAuthStore } from '@/stores/authStore'
 import { CommitList } from '@/components/repo/CommitList'
+import { IssuesList } from '@/components/repo/IssuesList'
+import { IssueDetail } from '@/components/repo/IssueDetail'
+import { NewIssueForm } from '@/components/repo/NewIssueForm'
+import { RepoSettings } from '@/components/repo/RepoSettings'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -76,9 +85,45 @@ export function RepositoryPage() {
   const branches = branchesRes?.success ? branchesRes.data : []
   const latest = commits[0]
 
+  const { data: starRes } = useStarStatus(username, repoName)
+  const toggleStar = useToggleStar()
+  const forkRepo = useForkRepository()
+  const isStarred = starRes?.success ? starRes.data.starred : false
+
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
-  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab
+  const isIssuesTab = location.pathname.includes('/issues')
+  const isSettingsTab = location.pathname.includes('/settings')
+  const isNewIssue = location.pathname.endsWith('/issues/new')
+  const issueMatch = location.pathname.match(/\/issues\/(\d+)/)
+  const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null
+
+  const { data: issuesCountRes } = useIssues(username, repoName, 'open', undefined, 1, 0)
+  const openIssueCount = issuesCountRes?.success ? issuesCountRes.data.openCount : 0
+
+  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab && !isSettingsTab
+
+  const readmeEntry = useMemo(() => {
+    if (!tree || routeKind !== 'tree' || treePathInRepo !== '') return null
+    // Case-insensitive match for readme.md
+    return tree.find(e => e.name.toLowerCase() === 'readme.md' && e.type === 'file')
+  }, [tree, routeKind, treePathInRepo])
+
+  const { data: readmeRes } = useBlobContent(
+    username, 
+    repoName, 
+    branch, 
+    readmeEntry ? `${treePathInRepo ? treePathInRepo + '/' : ''}${readmeEntry.name}` : ''
+  )
+
+  const readmeContent = useMemo(() => {
+    if (!readmeRes?.success || !readmeRes.data) return null
+    const b = readmeRes.data
+    if (b.encoding === 'base64') {
+      try { return atob(b.content) } catch { return null }
+    }
+    return b.content
+  }, [readmeRes])
 
   const decodedContent = useMemo(() => {
     if (!blob) return ''
@@ -140,38 +185,223 @@ export function RepositoryPage() {
 
   return (
     <div className="app-page max-w-[1280px]">
-      <PageHeader
-        badge="Repository workspace"
-        title={repoPath}
-        description={repo.description?.trim() || 'No description provided.'}
-        icon={FolderGit2}
-        meta={
-          <>
-            <span className="page-meta-pill">
-              <Circle className="size-2 fill-current text-rs-warm" />
-              {repo.language || 'Plain Text'}
-            </span>
-            <span className="page-meta-pill">Updated {formatRelativeTime(repo.updatedAt)}</span>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <Link to={`/${username}`} className="font-medium text-rs-link hover:underline">
+              {username}
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-semibold text-rs-link">{repoName}</span>
             <Badge
               variant="secondary"
-              className="h-8 rounded-md border border-rs-border bg-rs-bg/45 px-3 text-[11px] font-medium capitalize text-muted-foreground"
+              className="rounded-full border border-rs-border bg-transparent px-2 text-[10px] font-medium capitalize text-muted-foreground"
             >
               {repo.visibility}
             </Badge>
-          </>
-        }
-        actions={
-          <>
-            <RepoActionButton icon={Eye} label="Watch" value="0" />
-            <RepoActionButton icon={GitFork} label={isOwner ? 'Forks' : 'Fork'} value={String(repo.forks)} />
-            <RepoActionButton icon={Star} label="Star" value={String(repo.stars)} />
-          </>
-        }
-      />
+          </div>
+
+          {repo.forkedFrom && (
+            <div className="text-xs text-muted-foreground">
+              Forked from{' '}
+              <Link to={`/${repo.forkedFrom.ownerUsername}/${repo.forkedFrom.name}`} className="text-rs-link hover:underline">
+                {repo.forkedFrom.ownerUsername}/{repo.forkedFrom.name}
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-white">{repo.name}</h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span>{repo.description?.trim() || 'No description provided.'}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Circle className="size-2 fill-current text-rs-warm" />
+              {repo.language || 'Plain Text'}
+            </span>
+            <span>Updated {formatRelativeTime(repo.updatedAt)}</span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          <RepoActionButton icon={Eye} label="Watch" value="0" />
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]"
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              if (!isOwner) {
+                forkRepo.mutate({ owner: username, name: repoName }, {
+                  onSuccess: (res) => {
+                    if (res.success && res.data) {
+                      navigate(`/${currentUser.username}/${res.data.name}`)
+                    }
+                  }
+                })
+              }
+            }}
+            disabled={isOwner || forkRepo.isPending}
+          >
+            <GitFork className="size-3.5" />
+            Fork <span className="tabular-nums text-foreground">{repo.forks}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]",
+              isStarred && "text-yellow-400"
+            )}
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              toggleStar.mutate({ owner: username, name: repoName })
+            }}
+            disabled={toggleStar.isPending}
+          >
+            <Star className={cn("size-3.5", isStarred && "fill-yellow-400")} />
+            {isStarred ? 'Starred' : 'Star'} <span className="tabular-nums text-foreground">{repo.stars}</span>
+          </Button>
+        </div>
+      </header>
+=======
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <Link to={`/${username}`} className="font-medium text-rs-link hover:underline">
+              {username}
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-semibold text-rs-link">{repoName}</span>
+            <Badge
+              variant="secondary"
+              className="rounded-full border border-rs-border bg-transparent px-2 text-[10px] font-medium capitalize text-muted-foreground"
+            >
+              {repo.visibility}
+            </Badge>
+          </div>
+
+          {repo.forkedFrom && (
+            <div className="text-xs text-muted-foreground">
+              Forked from{' '}
+              <Link to={`/${repo.forkedFrom.ownerUsername}/${repo.forkedFrom.name}`} className="text-rs-link hover:underline">
+                {repo.forkedFrom.ownerUsername}/{repo.forkedFrom.name}
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-white">{repo.name}</h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span>{repo.description?.trim() || 'No description provided.'}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Circle className="size-2 fill-current text-rs-warm" />
+              {repo.language || 'Plain Text'}
+            </span>
+            <span>Updated {formatRelativeTime(repo.updatedAt)}</span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          <RepoActionButton icon={Eye} label="Watch" value="0" />
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]"
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              if (!isOwner) {
+                forkRepo.mutate({ owner: username, name: repoName }, {
+                  onSuccess: (res) => {
+                    if (res.success && res.data) {
+                      navigate(`/${currentUser.username}/${res.data.name}`)
+                    }
+                  }
+                })
+              }
+            }}
+            disabled={isOwner || forkRepo.isPending}
+          >
+            <GitFork className="size-3.5" />
+            Fork <span className="tabular-nums text-foreground">{repo.forks}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "gap-1 border-rs-border bg-rs-surface text-muted-foreground hover:bg-[#212830]",
+              isStarred && "text-yellow-400"
+            )}
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/login')
+                return
+              }
+              toggleStar.mutate({ owner: username, name: repoName })
+            }}
+            disabled={toggleStar.isPending}
+          >
+            <Star className={cn("size-3.5", isStarred && "fill-yellow-400")} />
+            {isStarred ? 'Starred' : 'Star'} <span className="tabular-nums text-foreground">{repo.stars}</span>
+          </Button>
+        </div>
+      </header>
+
+      {repo.sourceDeleted && (
+        <div className="rounded-md border border-red-900 bg-red-950/30 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Scale className="h-5 w-5 text-red-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-400">
+                Source Repository Deleted
+              </h3>
+              <div className="mt-2 text-sm text-red-300">
+                <p>
+                  The source repository for this fork has been deleted. Push and pull operations are disabled. You may delete this repository.
+                </p>
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  {isOwner && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-900 bg-red-950/50 text-red-400 hover:bg-red-900 hover:text-white"
+                      onClick={() => navigate(`/${username}/${repoName}/settings`)}
+                    >
+                      Delete Repository
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 
-          active={!isCommitsTab} 
+          active={!isCommitsTab && !isIssuesTab && !isSettingsTab} 
           icon={Code} 
           label="Code" 
           to={`/${username}/${repoName}/tree/${branch}`} 
@@ -184,15 +414,39 @@ export function RepositoryPage() {
           to={`/${username}/${repoName}/commits/${branch}`} 
           asLink 
         />
+        <TabItem
+          active={isIssuesTab}
+          icon={CircleDot}
+          label="Issues"
+          to={`/${username}/${repoName}/issues`}
+          asLink
+          count={openIssueCount}
+        />
         {isOwner && (
-          <TabItem icon={Settings} label="Settings" to={`/${username}/${repoName}/settings`} asLink />
+          <TabItem 
+            active={isSettingsTab}
+            icon={Settings} 
+            label="Settings" 
+            to={`/${username}/${repoName}/settings`} 
+            asLink 
+          />
         )}
       </nav>
 
-      <div className={cn("grid gap-8", !isCommitsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
+      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isSettingsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
+          ) : isIssuesTab ? (
+            isNewIssue ? (
+              <NewIssueForm username={username} repoName={repoName} />
+            ) : issueNumber ? (
+              <IssueDetail username={username} repoName={repoName} issueNumber={issueNumber} />
+            ) : (
+              <IssuesList username={username} repoName={repoName} />
+            )
+          ) : isSettingsTab ? (
+            <RepoSettings username={username} repoName={repoName} />
           ) : (
             <div className="surface-panel overflow-hidden">
               {isObjectRoute ? (
@@ -402,7 +656,13 @@ export function RepositoryPage() {
                     <span className="text-sm font-semibold text-white">README.md</span>
                   </div>
                   <div className="bg-rs-surface px-6 py-6">
-                    <ReadmeMarkdown source={repo.description || '# README\n\n_No description for this repository._'} />
+                    {readmeContent ? (
+                      <MarkdownRenderer content={readmeContent} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        {repo.description || 'No README found in this repository.'}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -410,7 +670,7 @@ export function RepositoryPage() {
           )}
         </section>
 
-        {!isCommitsTab && (
+        {!isCommitsTab && !isIssuesTab && !isSettingsTab && (
           <aside className="space-y-6 text-sm">
             <section>
               <h2 className="mb-2 text-base font-semibold text-white">About</h2>
@@ -505,6 +765,7 @@ function TabItem({
   to,
   icon: Icon,
   label,
+  count,
 }: {
   active?: boolean
   disabled?: boolean
@@ -512,6 +773,7 @@ function TabItem({
   to?: string
   icon: LucideIcon
   label: string
+  count?: number
 }) {
   const className = cn(
     '-mb-px inline-flex items-center gap-1.5 rounded-t-md border-b-2 px-3 py-2.5 text-sm transition-colors',
@@ -526,6 +788,11 @@ function TabItem({
     <>
       <Icon className="size-4 shrink-0 opacity-80" />
       {label}
+      {count !== undefined && count > 0 && (
+        <span className="ml-1 rounded-full bg-rs-accent/20 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+          {count}
+        </span>
+      )}
     </>
   )
 
@@ -541,72 +808,5 @@ function TabItem({
     <span className={className} aria-current={active ? 'page' : undefined}>
       {inner}
     </span>
-  )
-}
-
-function ReadmeMarkdown({ source }: { source: string }) {
-  const blocks = source.split('```')
-
-  return (
-    <article className="max-w-none text-muted-foreground">
-      <div className="space-y-4">
-        {blocks.map((block, i) => {
-          if (i % 2 === 1) {
-            return (
-              <pre key={i} className="overflow-x-auto rounded-md border border-rs-border bg-rs-bg/70 p-4 font-mono text-xs text-foreground">
-                {block.replace(/^\w*\n/, '')}
-              </pre>
-            )
-          }
-
-          return (
-            <div key={i} className="space-y-3 whitespace-pre-wrap">
-              {block.split('\n').map((line, li) => {
-                if (line.startsWith('# ')) {
-                  return (
-                    <h2 key={li} className="text-3xl font-semibold text-foreground">
-                      {line.slice(2)}
-                    </h2>
-                  )
-                }
-
-                if (line.startsWith('## ')) {
-                  return (
-                    <h3 key={li} className="text-xl font-semibold text-foreground">
-                      {line.slice(3)}
-                    </h3>
-                  )
-                }
-
-                const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-                return (
-                  <p key={li} className="text-sm leading-relaxed">
-                    {parts.map((p, pi) => {
-                      if (p.startsWith('**') && p.endsWith('**')) {
-                        return (
-                          <strong key={pi} className="text-foreground">
-                            {p.slice(2, -2)}
-                          </strong>
-                        )
-                      }
-
-                      if (p.startsWith('`') && p.endsWith('`')) {
-                        return (
-                          <code key={pi} className="rounded bg-rs-elevated px-1 py-0.5 font-mono text-xs text-foreground">
-                            {p.slice(1, -1)}
-                          </code>
-                        )
-                      }
-
-                      return <span key={pi}>{p}</span>
-                    })}
-                  </p>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
-    </article>
   )
 }

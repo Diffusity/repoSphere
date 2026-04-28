@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useAuthStore } from '@/stores/authStore'
 

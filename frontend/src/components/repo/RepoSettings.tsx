@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ChevronLeft, Info, Loader2, Settings as SettingsIcon, Shield, Trash2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { AlertTriangle, Info, Loader2, Shield, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Card,
@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,8 +24,7 @@ import { useConfirmDeleteRepository, useRepository, useUpdateRepository } from '
 import { useAuthStore } from '@/stores/authStore'
 import type { Repository } from '@/types'
 
-export function RepoSettingsPage() {
-  const { username = '', repoName = '' } = useParams()
+export function RepoSettings({ username, repoName }: { username: string; repoName: string }) {
   const currentUser = useAuthStore((s) => s.user)
   const { data: repoRes, isLoading: repoLoading } = useRepository(username, repoName)
   const repo = repoRes?.success ? repoRes.data : null
@@ -119,27 +117,7 @@ function RepoSettingsForm({
   }
 
   return (
-    <div className="app-page max-w-4xl pb-12">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to={`/${username}/${repoName}`} className="flex items-center gap-1 hover:text-rs-link">
-          <ChevronLeft className="size-4" />
-          Back to repository
-        </Link>
-      </div>
-
-      <PageHeader
-        badge="Repository controls"
-        title="Repository settings"
-        description={`Manage ${username}/${repoName}, update metadata, and handle high-impact repository actions.`}
-        icon={SettingsIcon}
-        meta={
-          <>
-            <span className="page-meta-pill">Default branch: {defaultBranch}</span>
-            <span className="page-meta-pill">Visibility: {visibility}</span>
-          </>
-        }
-      />
-
+    <div className="py-2">
       <div className="space-y-6">
         <Card className="surface-panel">
           <CardHeader className="border-b border-rs-border/50">
