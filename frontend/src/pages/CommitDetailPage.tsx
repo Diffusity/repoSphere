@@ -1,4 +1,4 @@
-import { ChevronLeft, GitCommit, Loader2 } from 'lucide-react'
+import { ChevronLeft, GitCommit, GitMerge, Loader2 } from 'lucide-react'
 import { useParams, Link } from 'react-router-dom'
 import { CommitHash } from '@/components/common/CommitHash'
 import { DiffViewer } from '@/components/common/DiffViewer'
@@ -93,8 +93,29 @@ export function CommitDetailPage() {
           <Separator orientation="vertical" className="hidden h-4 bg-rs-border sm:block" />
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <GitCommit className="size-3.5" />
-              1 parent <span className="font-mono text-rs-link hover:underline cursor-pointer">{truncateHash(commit.hash)}</span>
+              {commit.isMerge && commit.parents ? (
+                <>
+                  <GitMerge className="size-3.5" />
+                  {commit.parents.length} parents
+                  <span className="flex gap-1 ml-1">
+                    {commit.parents.map((p, i) => (
+                      <span key={p} className="flex items-center">
+                        <Link to={`/${username}/${repoName}/commit/${p}`} className="font-mono text-rs-link hover:underline">
+                          {truncateHash(p)}
+                        </Link>
+                        {i < commit.parents!.length - 1 && <span className="mx-1">+</span>}
+                      </span>
+                    ))}
+                  </span>
+                </>
+              ) : commit.parent_hash ? (
+                <>
+                  <GitCommit className="size-3.5" />
+                  1 parent <Link to={`/${username}/${repoName}/commit/${commit.parent_hash}`} className="font-mono text-rs-link hover:underline">{truncateHash(commit.parent_hash)}</Link>
+                </>
+              ) : (
+                <span className="text-muted-foreground/70">Initial commit</span>
+              )}
             </span>
             <span>commit <span className="font-mono text-white">{commit.hash}</span></span>
           </div>

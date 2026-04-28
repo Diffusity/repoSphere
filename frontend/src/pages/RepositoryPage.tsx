@@ -8,6 +8,7 @@ import {
   FolderGit2,
   GitCommit,
   GitFork,
+  GitPullRequest,
   History,
   Scale,
   Settings,
@@ -54,6 +55,9 @@ import { IssuesList } from '@/components/repo/IssuesList'
 import { IssueDetail } from '@/components/repo/IssueDetail'
 import { NewIssueForm } from '@/components/repo/NewIssueForm'
 import { RepoSettings } from '@/components/repo/RepoSettings'
+import { PullRequestList } from '@/components/repo/PullRequestList'
+import { PullRequestDetail } from '@/components/repo/PullRequestDetail'
+import { usePullRequests } from '@/hooks/useRepository'
 
 export function RepositoryPage() {
   const params = useParams()
@@ -93,15 +97,21 @@ export function RepositoryPage() {
   const isBlob = routeKind === 'blob'
   const isCommitsTab = location.pathname.includes('/commits')
   const isIssuesTab = location.pathname.includes('/issues')
+  const isPullsTab = location.pathname.includes('/pulls')
   const isSettingsTab = location.pathname.includes('/settings')
   const isNewIssue = location.pathname.endsWith('/issues/new')
   const issueMatch = location.pathname.match(/\/issues\/(\d+)/)
   const issueNumber = issueMatch ? parseInt(issueMatch[1], 10) : null
+  const pullMatch = location.pathname.match(/\/pulls\/(\d+)/)
+  const pullNumber = pullMatch ? parseInt(pullMatch[1], 10) : null
 
   const { data: issuesCountRes } = useIssues(username, repoName, 'open', undefined, 1, 0)
   const openIssueCount = issuesCountRes?.success ? issuesCountRes.data.openCount : 0
 
-  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab && !isSettingsTab
+  const { data: pullsRes } = usePullRequests(username, repoName)
+  const openPullsCount = pullsRes?.success ? pullsRes.data.filter(pr => pr.status === 'open').length : 0
+
+  const showReadme = (!isObjectRoute || (routeKind === 'tree' && treePathInRepo === '')) && !isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab
 
   const readmeEntry = useMemo(() => {
     if (!tree || routeKind !== 'tree' || treePathInRepo !== '') return null
@@ -311,7 +321,7 @@ export function RepositoryPage() {
 
       <nav className="-mx-1 flex flex-wrap gap-1 border-b border-rs-border" aria-label="Repository">
         <TabItem 
-          active={!isCommitsTab && !isIssuesTab && !isSettingsTab} 
+          active={!isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab} 
           icon={Code} 
           label="Code" 
           to={`/${username}/${repoName}/tree/${branch}`} 
@@ -332,6 +342,14 @@ export function RepositoryPage() {
           asLink
           count={openIssueCount}
         />
+        <TabItem
+          active={isPullsTab}
+          icon={GitPullRequest}
+          label="Pull Requests"
+          to={`/${username}/${repoName}/pulls`}
+          asLink
+          count={openPullsCount}
+        />
         {isOwner && (
           <TabItem 
             active={isSettingsTab}
@@ -343,7 +361,7 @@ export function RepositoryPage() {
         )}
       </nav>
 
-      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isSettingsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
+      <div className={cn("grid gap-8", !isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab && !isPullsTab && "lg:grid-cols-[minmax(0,1fr)_296px]")}>
         <section className="min-w-0">
           {isCommitsTab ? (
             <CommitList username={username} repoName={repoName} branch={branch} />
@@ -354,6 +372,12 @@ export function RepositoryPage() {
               <IssueDetail username={username} repoName={repoName} issueNumber={issueNumber} />
             ) : (
               <IssuesList username={username} repoName={repoName} />
+            )
+          ) : isPullsTab ? (
+            pullNumber ? (
+              <PullRequestDetail username={username} repoName={repoName} pullNumber={pullNumber} />
+            ) : (
+              <PullRequestList username={username} repoName={repoName} />
             )
           ) : isSettingsTab ? (
             <RepoSettings username={username} repoName={repoName} />
@@ -580,7 +604,7 @@ export function RepositoryPage() {
           )}
         </section>
 
-        {!isCommitsTab && !isIssuesTab && !isSettingsTab && (
+        {!isCommitsTab && !isIssuesTab && !isPullsTab && !isSettingsTab && (
           <aside className="space-y-6 text-sm">
             <section>
               <h2 className="mb-2 text-base font-semibold text-white">About</h2>

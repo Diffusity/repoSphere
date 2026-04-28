@@ -62,3 +62,8 @@ func LoadObject(hash string) (string, error) {
 
 	return string(decompressed), nil
 }
+
+// StoreObject is a wrapper around WriteObject for string content
+func StoreObject(hash string, data string) error {
+	return WriteObject(hash, []byte(data))
+}

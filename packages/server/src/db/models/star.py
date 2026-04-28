@@ -28,4 +28,4 @@ class Star(Base):
     )
 
     user = relationship("User", lazy="selectin")
-    repository = relationship("Repository", lazy="selectin")
+    repository = relationship("Repository", back_populates="stars_entries", lazy="selectin")

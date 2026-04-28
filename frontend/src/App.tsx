@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
 import { CommitDetailPage } from '@/pages/CommitDetailPage'
+import { CreatePullRequest } from '@/pages/CreatePullRequest'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ExplorePage } from '@/pages/ExplorePage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
@@ -69,6 +70,9 @@ export default function App() {
           <Route path="/:username/:repoName/tree/:branch/*" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/issues" element={<RepositoryPage />} />
           <Route path="/:username/:repoName/issues/*" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/pulls" element={<RepositoryPage />} />
+          <Route path="/:username/:repoName/pulls/new" element={<CreatePullRequest />} />
+          <Route path="/:username/:repoName/pulls/:number" element={<RepositoryPage />} />
           <Route path="/:username/:repoName" element={<RepositoryPage />} />
           <Route path="/:username" element={<ProfilePage />} />
         </Route>
