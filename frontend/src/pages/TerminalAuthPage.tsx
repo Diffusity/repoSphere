@@ -117,6 +117,14 @@ export function TerminalAuthPage() {
             </Button>
           </div>
         </div>
+      ) : !isLoaded ? (
+        <div className="rounded-lg border border-rs-border bg-rs-bg/45 p-5 text-center">
+          <div className="mx-auto inline-flex size-14 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
+            <Loader2 className="size-6 animate-spin" />
+          </div>
+          <p className="mt-3 text-lg font-medium text-white">Checking session...</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Please wait while we verify your account.</p>
+        </div>
       ) : !isSignedIn ? (
         <div className="space-y-4">
           <div className="rounded-lg border border-rs-border bg-rs-bg/45 p-4">
